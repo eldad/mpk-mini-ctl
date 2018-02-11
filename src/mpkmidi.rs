@@ -47,6 +47,7 @@ pub fn sysex_get_bank(id: u8) -> Vec<u8> {
 }
 
 // u14, big endian
+#[derive(Serialize, Deserialize)]
 struct U14BE {
     host: u16,
 }
@@ -87,7 +88,7 @@ macro_rules! u14le_to_u16 {
 }
 
 // Note
-#[derive(Copy, Clone, Default)]
+#[derive(Serialize, Deserialize, Copy, Clone, Default)]
 struct Note {
     value: u8,
 }
@@ -115,7 +116,7 @@ impl fmt::Display for Note {
 }
 
 // Toggle
-#[derive(Copy, Clone, Debug)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug)]
 enum Toggle {
     Off,
     On,
@@ -132,7 +133,7 @@ impl Toggle {
 }
 
 // Knob
-#[derive(Copy, Clone, Default)]
+#[derive(Serialize, Deserialize, Copy, Clone, Default)]
 struct Knob {
     control: u8,
     min: u8,
@@ -156,7 +157,7 @@ impl Knob {
 }
 
 // PadMode
-#[derive(Copy, Clone, Debug)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug)]
 enum PadMode {
     Toggle,
     Momentary,
@@ -179,7 +180,7 @@ impl Default for PadMode {
 }
 
 // Pad
-#[derive(Copy, Clone, Default)]
+#[derive(Serialize, Deserialize, Copy, Clone, Default)]
 struct Pad {
     note: Note,
     control: u8,
@@ -205,7 +206,7 @@ impl Pad {
 }
 
 // ClockSource
-#[derive(Copy, Clone, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 enum ClockSource {
     Internal,
     External,
@@ -222,7 +223,7 @@ impl ClockSource {
 }
 
 // ArpeggiatorTimeDivision
-#[derive(Copy, Clone, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 enum ArpeggiatorTimeDivision {
     _4,
     _4T,
@@ -258,7 +259,7 @@ impl fmt::Display for ArpeggiatorTimeDivision {
 }
 
 // ArpeggiatorMode
-#[derive(Copy, Clone, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 enum ArpeggiatorMode {
     Up,
     Down,
@@ -283,7 +284,7 @@ impl ArpeggiatorMode {
 }
 
 // Swing
-#[derive(Copy, Clone, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 enum Swing {
     _50,
     _55,
@@ -315,7 +316,7 @@ impl fmt::Display for Swing {
 }
 
 // Joystick
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 enum Joystick {
     Pitchbend,
     ControlChannel(u8),
@@ -334,24 +335,27 @@ impl Joystick {
 }
 
 // MpkBankDescriptor
+#[derive(Serialize, Deserialize)]
 pub struct MpkBankDescriptor {
-    arpeggiator: Toggle,
     octave: u8,
-    clock_source: ClockSource,
+    transpose: u8, // -12 (0) .. +12 (24)
+    pad_midi_channel: u8,
+    keybed_channel: u8,
+    joystick_x: Joystick,
+    joystick_y: Joystick,
+
+    arpeggiator: Toggle,
     arpeggiator_mode: ArpeggiatorMode,
     arpeggiator_time_division: ArpeggiatorTimeDivision,
     arpeggiator_octave: u8, // 0..3
     swing: Swing,
     latch: Toggle,
-    pad_midi_channel: u8,
-    keybed_channel: u8,
+    clock_source: ClockSource,
     tempo_taps: u8,
     tempo: U14BE,
-    joystick_x: Joystick,
-    joystick_y: Joystick,
+
     knobs: [Knob; 8],
     pads: [Pad; 16],
-    transpose: u8, // -12 (0) .. +12 (24)
 }
 
 #[derive(Debug)]

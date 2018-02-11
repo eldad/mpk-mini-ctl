@@ -42,6 +42,12 @@ use midir::{MidiInput, MidiOutput, MidiOutputConnection, MidiInputConnection};
 extern crate regex;
 use regex::Regex;
 
+#[macro_use]
+extern crate serde_derive;
+
+extern crate serde;
+extern crate serde_yaml;
+
 const DEVICE_NAME: &str = "MPKmini2";
 
 fn midi_out_connect_by_name(port: MidiOutput, name: &str) -> Result<MidiOutputConnection, Box<Error>> {
@@ -89,7 +95,7 @@ fn snoop() -> Result<(), Box<Error>> {
     loop {}
 }
 
-fn get_bank(bank: u8) -> Result<(), Box<Error>> {
+fn get_bank_desc(bank: u8) -> Result<MpkBankDescriptor, Box<Error>> {
     if bank > 4 {
         return Err(Box::new(RuntimeError::new("Bank value must be between 0 and 4 (0 = RAM)")))
     }
@@ -117,22 +123,51 @@ fn get_bank(bank: u8) -> Result<(), Box<Error>> {
     let midi_in = midi_in_connect_by_name(MidiInput::new(env!("CARGO_PKG_NAME"))?, env!("CARGO_PKG_NAME"), cb, ())?;
 
     midi_out.send(sysex_get_bank(bank).as_slice())?;
-    let msg = rx.recv_timeout(Duration::new(10, 0))?;
-    println!("Bank {}:\n{:?}", bank, msg);
+    let bank_desc = rx.recv_timeout(Duration::new(10, 0))?;
 
     midi_out.close();
     midi_in.close();
+
+    Ok(bank_desc)
+}
+
+fn show_bank(bank: u8) -> Result<(), Box<Error>> {
+    let bank_desc = get_bank_desc(bank)?;
+    println!("Bank {}:\n{:?}", bank, bank_desc);
     Ok(())
 }
 
-fn cmd_get_bank(matches: &ArgMatches) -> Result<(), Box<Error>> {
-    get_bank(matches.value_of("bank").unwrap().parse::<u8>()?)
+fn dump_bank_yaml(bank: u8) -> Result<(), Box<Error>> {
+    let bank_desc = get_bank_desc(bank)?;
+    let serialized = serde_yaml::to_string(&bank_desc).unwrap();
+    println!("{}", serialized);
+    Ok(())
 }
 
-fn cmd_get(matches: &ArgMatches) -> Result<(), Box<Error>> {
+fn cmd_show_bank(matches: &ArgMatches) -> Result<(), Box<Error>> {
+    let bank = matches.value_of("bank").unwrap().parse::<u8>()?;
+    show_bank(bank)?;
+    Ok(())
+}
+
+fn cmd_dump_bank_yaml(matches: &ArgMatches) -> Result<(), Box<Error>> {
+    let bank = matches.value_of("bank").unwrap().parse::<u8>()?;
+    dump_bank_yaml(bank)?;
+    Ok(())
+}
+
+fn cmd_show(matches: &ArgMatches) -> Result<(), Box<Error>> {
     match matches.subcommand_name() {
-        Some("bank") => cmd_get_bank(matches.subcommand_matches("bank").unwrap()),
-        Some("ram") => get_bank(0),
+        Some("bank") => cmd_show_bank(matches.subcommand_matches("bank").unwrap()),
+        Some("ram") => show_bank(0),
+        _ => Err(Box::new(RuntimeError::new("please provide a valid command."))),
+    }
+}
+
+fn cmd_dump_yaml(matches: &ArgMatches) -> Result<(), Box<Error>> {
+    match matches.subcommand_name() {
+        Some("bank") => cmd_dump_bank_yaml(matches.subcommand_matches("bank").unwrap()),
+        Some("ram") => dump_bank_yaml(0),
         _ => Err(Box::new(RuntimeError::new("please provide a valid command."))),
     }
 }
@@ -142,17 +177,29 @@ fn app() -> Result<(), Box<Error>> {
         .version(env!("CARGO_PKG_VERSION"))
         .author(env!("CARGO_PKG_AUTHORS"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
-        .subcommand(SubCommand::with_name("get")
-            .about("get commands")
+        .subcommand(SubCommand::with_name("show")
+            .about("show commands")
             .subcommand(SubCommand::with_name("bank")
-                .about("get bank settings")
+                .about("show bank settings")
                 .arg(Arg::with_name("bank")
                     .index(1)
                     .required(true)
                 )
             )
             .subcommand(SubCommand::with_name("ram")
-                .about("get current settings (RAM)"))
+                .about("show current active settings (RAM)"))
+        )
+        .subcommand(SubCommand::with_name("dump")
+            .about("dump settings")
+            .subcommand(SubCommand::with_name("bank")
+                .about("dump bank settings as yaml")
+                .arg(Arg::with_name("bank")
+                    .index(1)
+                    .required(true)
+                )
+            )
+            .subcommand(SubCommand::with_name("ram")
+                .about("dump current active settings (RAM) as yaml"))
         )
         .subcommand(SubCommand::with_name("snoop")
             .about("snoop MIDI messages")
@@ -160,9 +207,10 @@ fn app() -> Result<(), Box<Error>> {
         .get_matches();
 
     match matches.subcommand_name() {
-        Some("get") => cmd_get(matches.subcommand_matches("get").unwrap()),
+        Some("show") => cmd_show(matches.subcommand_matches("show").unwrap()),
+        Some("dump") => cmd_dump_yaml(matches.subcommand_matches("dump").unwrap()),
         Some("snoop") => snoop(),
-        _ => Err(Box::new(RuntimeError::new("please provide a valid command."))),
+        _ => Err(Box::new(RuntimeError::new("please provide a valid command (use 'help' for information)"))),
     }
 }
 
