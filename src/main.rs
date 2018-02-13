@@ -30,6 +30,9 @@ use std::time::Duration;
 mod runtime_error;
 use runtime_error::RuntimeError;
 
+mod u14;
+mod mpkbank;
+use mpkbank::MpkBankDescriptor;
 mod mpkmidi;
 use mpkmidi::*;
 
