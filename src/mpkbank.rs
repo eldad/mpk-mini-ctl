@@ -25,6 +25,7 @@
 
 use std::fmt;
 use u14::U14BE;
+use error::ParseError;
 
 // Note
 #[derive(Serialize, Deserialize, Copy, Clone, Default)]
@@ -62,11 +63,11 @@ enum Toggle {
 }
 
 impl Toggle {
-    fn from(value: u8) -> Toggle {
+    fn from(value: u8) -> Result<Toggle, ParseError> {
         match value {
-            0 => Toggle::Off,
-            1 => Toggle::On,
-            _ => panic!("Unknown value for toggle {}", value),
+            0 => Ok(Toggle::Off),
+            1 => Ok(Toggle::On),
+            _ => Err(ParseError::new(&format!("Unknown value for toggle {}", value))),
         }
     }
 }
@@ -103,11 +104,11 @@ enum PadMode {
 }
 
 impl PadMode {
-    fn from(value: u8) -> PadMode {
+    fn from(value: u8) -> Result<PadMode, ParseError> {
         match value {
-            0 => PadMode::Momentary,
-            1 => PadMode::Toggle,
-            _ => panic!("Unknown padmode value {}", value),
+            0 => Ok(PadMode::Momentary),
+            1 => Ok(PadMode::Toggle),
+            _ => Err(ParseError::new(&format!("Unknown padmode value {}", value))),
         }
     }
 }
@@ -134,13 +135,13 @@ impl fmt::Debug for Pad {
 }
 
 impl Pad {
-    fn from(value: [u8; 4]) -> Pad {
-        Pad {
+    fn from(value: [u8; 4]) -> Result<Pad, ParseError> {
+        Ok(Pad {
             note: Note { value: value[0] },
             program: value[1],
             control: value[2],
-            mode: PadMode::from(value[3]),
-        }
+            mode: PadMode::from(value[3])?,
+        })
     }
 }
 
@@ -152,11 +153,11 @@ enum ClockSource {
 }
 
 impl ClockSource {
-    fn from(value: u8) -> ClockSource {
+    fn from(value: u8) -> Result<ClockSource, ParseError> {
         match value {
-            0 => ClockSource::Internal,
-            1 => ClockSource::External,
-            _ => panic!("Unknown clock source value {}", value),
+            0 => Ok(ClockSource::Internal),
+            1 => Ok(ClockSource::External),
+            _ => Err(ParseError::new(&format!("Unknown clock source value {}", value))),
         }
     }
 }
@@ -175,17 +176,17 @@ enum ArpeggiatorTimeDivision {
 }
 
 impl ArpeggiatorTimeDivision {
-    fn from(value: u8) -> ArpeggiatorTimeDivision {
+    fn from(value: u8) -> Result<ArpeggiatorTimeDivision, ParseError> {
         match value {
-            0 => ArpeggiatorTimeDivision::_4,
-            1 => ArpeggiatorTimeDivision::_4T,
-            2 => ArpeggiatorTimeDivision::_8,
-            3 => ArpeggiatorTimeDivision::_8T,
-            4 => ArpeggiatorTimeDivision::_16,
-            5 => ArpeggiatorTimeDivision::_16T,
-            6 => ArpeggiatorTimeDivision::_32,
-            7 => ArpeggiatorTimeDivision::_32T,
-            _ => panic!("Invalid arpeggiator time division {}", value),
+            0 => Ok(ArpeggiatorTimeDivision::_4),
+            1 => Ok(ArpeggiatorTimeDivision::_4T),
+            2 => Ok(ArpeggiatorTimeDivision::_8),
+            3 => Ok(ArpeggiatorTimeDivision::_8T),
+            4 => Ok(ArpeggiatorTimeDivision::_16),
+            5 => Ok(ArpeggiatorTimeDivision::_16T),
+            6 => Ok(ArpeggiatorTimeDivision::_32),
+            7 => Ok(ArpeggiatorTimeDivision::_32T),
+            _ => Err(ParseError::new(&format!("Invalid arpeggiator time division {}", value))),
         }
     }
 }
@@ -209,15 +210,15 @@ enum ArpeggiatorMode {
 }
 
 impl ArpeggiatorMode {
-    fn from(value: u8) -> ArpeggiatorMode {
+    fn from(value: u8) -> Result<ArpeggiatorMode, ParseError> {
         match value {
-            0 => ArpeggiatorMode::Up,
-            1 => ArpeggiatorMode::Down,
-            2 => ArpeggiatorMode::Exclusive,
-            3 => ArpeggiatorMode::Inclusive,
-            4 => ArpeggiatorMode::Order,
-            5 => ArpeggiatorMode::Random,
-            _ => panic!("Invalid arpeggiator mode {}", value),
+            0 => Ok(ArpeggiatorMode::Up),
+            1 => Ok(ArpeggiatorMode::Down),
+            2 => Ok(ArpeggiatorMode::Exclusive),
+            3 => Ok(ArpeggiatorMode::Inclusive),
+            4 => Ok(ArpeggiatorMode::Order),
+            5 => Ok(ArpeggiatorMode::Random),
+            _ => Err(ParseError::new(&format!("Invalid arpeggiator mode {}", value))),
         }
     }
 }
@@ -234,15 +235,15 @@ enum Swing {
 }
 
 impl Swing {
-    fn from(value: u8) -> Swing {
+    fn from(value: u8) -> Result<Swing, ParseError> {
         match value {
-            0 => Swing::_50,
-            1 => Swing::_55,
-            2 => Swing::_57,
-            3 => Swing::_59,
-            4 => Swing::_61,
-            5 => Swing::_64,
-            _ => panic!("Invalid swing value {}", value),
+            0 => Ok(Swing::_50),
+            1 => Ok(Swing::_55),
+            2 => Ok(Swing::_57),
+            3 => Ok(Swing::_59),
+            4 => Ok(Swing::_61),
+            5 => Ok(Swing::_64),
+            _ => Err(ParseError::new(&format!("Invalid swing value {}", value))),
         }
     }
 }
@@ -263,12 +264,12 @@ enum Joystick {
 }
 
 impl Joystick {
-    fn from(bytes: [u8; 3]) -> Joystick{
+    fn from(bytes: [u8; 3]) -> Result<Joystick, ParseError> {
         match bytes[0] {
-            0 => Joystick::Pitchbend,
-            1 => Joystick::ControlChannel(bytes[1]),
-            2 => Joystick::SplitControlChannels(bytes[1], bytes[2]),
-            _ => panic!("Invalid joystick mode {}", bytes[1]),
+            0 => Ok(Joystick::Pitchbend),
+            1 => Ok(Joystick::ControlChannel(bytes[1])),
+            2 => Ok(Joystick::SplitControlChannels(bytes[1], bytes[2])),
+            _ => Err(ParseError::new(&format!("Invalid joystick mode {}", bytes[1]))),
         }
     }
 }
@@ -329,50 +330,53 @@ impl fmt::Debug for MpkBankDescriptor {
 }
 
 impl MpkBankDescriptor {
-    fn parse_knobs(bytes: &[u8]) -> [Knob; 8] {
+    fn parse_knobs(bytes: &[u8]) -> Result<[Knob; 8], ParseError> {
         if bytes.len() != 8 * 3 {
-            panic!("trying to parse knobs with unexpected length {} (expected {})", bytes.len(), 8 * 3);
+            Err(ParseError::new(&format!("trying to parse knobs with unexpected length {} (expected {})", bytes.len(), 8 * 3)))
+        } else {
+            let mut knobs: [Knob; 8] = [Knob::default(); 8];
+            for i in 0..8 {
+                knobs[i] = Knob::from([bytes[i * 3], bytes[i * 3 + 1], bytes[i * 3 + 2]]);
+            }
+            Ok(knobs)
         }
-        let mut knobs: [Knob; 8] = [Knob::default(); 8];
-        for i in 0..8 {
-            knobs[i] = Knob::from([bytes[i * 3], bytes[i * 3 + 1], bytes[i * 3 + 2]]);
-        }
-        knobs
     }
 
-    fn parse_pads(bytes: &[u8]) -> [Pad; 16] {
+    fn parse_pads(bytes: &[u8]) -> Result<[Pad; 16], ParseError> {
         if bytes.len() != 16 * 4 {
-            panic!("trying to parse pads with unexpected length {} (expected {})", bytes.len(), 16 * 4);
+            Err(ParseError::new(&format!("trying to parse pads with unexpected length {} (expected {})", bytes.len(), 16 * 4)))
+        } else {
+            let mut pads: [Pad; 16] = [Pad::default(); 16];
+            for i in 0..16 {
+                pads[i] = Pad::from([bytes[i * 4], bytes[i * 4 + 1], bytes[i * 4 + 2], bytes[i * 4 + 3]])?;
+            }
+            Ok(pads)
         }
-        let mut pads: [Pad; 16] = [Pad::default(); 16];
-        for i in 0..16 {
-            pads[i] = Pad::from([bytes[i * 4], bytes[i * 4 + 1], bytes[i * 4 + 2], bytes[i * 4 + 3]]);
-        }
-        pads
     }
 
-    pub fn from(bytes: &[u8]) -> MpkBankDescriptor {
+    pub fn from(bytes: &[u8]) -> Result<MpkBankDescriptor, ParseError> {
         if bytes.len() != 108 {
-            panic!("Unexpected length for bank descriptor ({}, expected 108)", bytes.len());
-        }
-        MpkBankDescriptor {
-            pad_midi_channel: bytes[0],
-            keybed_channel: bytes[1],
-            octave: bytes[2],
-            arpeggiator: Toggle::from(bytes[3]),
-            arpeggiator_mode: ArpeggiatorMode::from(bytes[4]),
-            arpeggiator_time_division: ArpeggiatorTimeDivision::from(bytes[5]),
-            clock_source: ClockSource::from(bytes[6]),
-            latch: Toggle::from(bytes[7]),
-            swing: Swing::from(bytes[8]),
-            tempo_taps: bytes[9],
-            tempo: U14BE::from_device([bytes[10], bytes[11]]),
-            arpeggiator_octave: bytes[12],
-            joystick_x: Joystick::from([bytes[13], bytes[14], bytes[15]]),
-            joystick_y: Joystick::from([bytes[16], bytes[17], bytes[18]]),
-            pads: MpkBankDescriptor::parse_pads(&bytes[19..83]),
-            knobs: MpkBankDescriptor::parse_knobs(&bytes[83..107]),
-            transpose: bytes[107],
+            Err(ParseError::new(&format!("Unexpected length for bank descriptor ({}, expected 108)", bytes.len())))
+        } else {
+            Ok(MpkBankDescriptor {
+                pad_midi_channel: bytes[0],
+                keybed_channel: bytes[1],
+                octave: bytes[2],
+                arpeggiator: Toggle::from(bytes[3])?,
+                arpeggiator_mode: ArpeggiatorMode::from(bytes[4])?,
+                arpeggiator_time_division: ArpeggiatorTimeDivision::from(bytes[5])?,
+                clock_source: ClockSource::from(bytes[6])?,
+                latch: Toggle::from(bytes[7])?,
+                swing: Swing::from(bytes[8])?,
+                tempo_taps: bytes[9],
+                tempo: U14BE::from_device([bytes[10], bytes[11]])?,
+                arpeggiator_octave: bytes[12],
+                joystick_x: Joystick::from([bytes[13], bytes[14], bytes[15]])?,
+                joystick_y: Joystick::from([bytes[16], bytes[17], bytes[18]])?,
+                pads: MpkBankDescriptor::parse_pads(&bytes[19..83])?,
+                knobs: MpkBankDescriptor::parse_knobs(&bytes[83..107])?,
+                transpose: bytes[107],
+            })
         }
     }
 }

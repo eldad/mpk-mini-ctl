@@ -27,8 +27,8 @@ use std::error::Error;
 use std::sync::mpsc;
 use std::time::Duration;
 
-mod runtime_error;
-use runtime_error::RuntimeError;
+mod error;
+use error::*;
 
 mod u14;
 mod mpkbank;
@@ -89,8 +89,8 @@ where
 fn snoop() -> Result<(), Box<Error>> {
     let cb = |_, bytes: &[u8], _: &mut _| {
         match parse_msg(bytes) {
-            Some(m) => println!("{:?}", m),
-            None => println!("Unparsed: {:?}", bytes),
+            Ok(m) => println!("{:?}", m),
+            Err(e) => println!("Unparsed: {}; bytes: {:?}", e, bytes),
         }
     };
     let _midi_in = midi_in_connect_by_name(MidiInput::new(env!("CARGO_PKG_NAME"))?, env!("CARGO_PKG_NAME"), cb, ())?;
@@ -106,7 +106,7 @@ fn get_bank_desc(bank: u8) -> Result<MpkBankDescriptor, Box<Error>> {
     let (tx, rx) = mpsc::channel();
 
     let cb = move |_, bytes: &[u8], _: &mut _| {
-        if let Some(m) = parse_msg(bytes) {
+        if let Ok(m) = parse_msg(bytes) {
             if let MpkMidiMessage::Bank(bank_rx, d) = m {
                 if bank != bank_rx {
                     println!("Error: received bank {}, expected {}", bank_rx, bank);

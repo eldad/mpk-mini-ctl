@@ -26,6 +26,8 @@
 use std::error::Error;
 use std::fmt;
 
+/* Runtime Error */
+
 #[derive(Debug)]
 pub struct RuntimeError {
     reason: String,
@@ -51,6 +53,38 @@ impl Error for RuntimeError {
 
 impl fmt::Display for RuntimeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Run-time Error: {}", self.reason)
+        write!(f, "Run Time Error: {}", self.reason)
+    }
+}
+
+/* Parse Error */
+
+
+#[derive(Debug)]
+pub struct ParseError {
+    reason: String,
+}
+
+impl ParseError {
+    pub fn new(reason: &str) -> ParseError {
+        ParseError {
+            reason: String::from(reason),
+        }
+    }
+}
+
+impl Error for ParseError {
+    fn description(&self) -> &str {
+        &self.reason
+    }
+
+    fn cause(&self) -> Option<&Error> {
+        None
+    }
+}
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Parse Error: {}", self.reason)
     }
 }

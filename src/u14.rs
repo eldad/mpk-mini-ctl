@@ -24,6 +24,7 @@
  */
 
 use std::fmt;
+use error::ParseError;
 
 /* 14 bits unsigned, big endian */
 #[derive(Serialize, Deserialize)]
@@ -32,18 +33,23 @@ pub struct U14BE {
 }
 
 impl U14BE {
-    pub fn from_device(bytes: [u8; 2]) -> U14BE {
-        U14BE { host: ((bytes[0] as u16) << 7) | bytes[1] as u16 }
+    pub fn from_device(bytes: [u8; 2]) -> Result<U14BE, ParseError> {
+        if ((bytes[0] | bytes[1]) & 0x80) == 0x80 {
+            Err(ParseError::new(&format!("ERROR: MSB set on U14 type from device: {:?}", bytes)))
+        } else {
+            Ok(U14BE { host: ((bytes[0] as u16) << 7) | bytes[1] as u16 })
+        }
     }
 
-    pub fn to_device(&self) -> [u8; 2] {
+    pub fn to_device(&self) -> Result<[u8; 2], ParseError> {
         if self.host & 0xc000 != 0 {
-            panic!("value too large to convert into u14: {}", self.host)
+            Err(ParseError::new(&format!("value too large to convert into u14: {}", self.host)))
+        } else {
+            Ok([
+                ((self.host & 0x3f80) >> 7) as u8,
+                (self.host & 0x007f) as u8,
+            ])
         }
-        [
-            ((self.host & 0x3f80) >> 7) as u8,
-            (self.host & 0x007f) as u8,
-        ]
     }
 }
 
