@@ -53,11 +53,12 @@ extern crate serde_yaml;
 
 const DEVICE_NAME: &str = "MPKmini2";
 
-fn midi_out_connect_by_name(port: MidiOutput, name: &str) -> Result<MidiOutputConnection, Box<Error>> {
+fn midi_out_connect() -> Result<MidiOutputConnection, Box<Error>> {
+    let port = MidiOutput::new(env!("CARGO_PKG_NAME"))?;
+    let name = env!("CARGO_PKG_NAME");
     let re = Regex::new(&format!("{} [0-9]+:[0-9]", DEVICE_NAME)).unwrap();
     for i in 0..port.port_count() {
         let port_name = port.port_name(i)?;
-        //println!("* OUT: {}", port_name);
         if re.is_match(port_name.as_str()) {
             return match port.connect(i, name) {
                 Ok(ret) => Ok(ret),
@@ -68,14 +69,15 @@ fn midi_out_connect_by_name(port: MidiOutput, name: &str) -> Result<MidiOutputCo
     Err(Box::new(RuntimeError::new(&format!("MIDI Out port '{}' not found.", name))))
 }
 
-fn midi_in_connect_by_name <F, T: Send> (port: MidiInput, name: &str, callback: F, data: T) -> Result<MidiInputConnection<T>, Box<Error>>
+fn midi_in_connect <F, T: Send> (callback: F, data: T) -> Result<MidiInputConnection<T>, Box<Error>>
 where
     F: FnMut(u64, &[u8], &mut T) + Send + 'static
 {
+    let port = MidiInput::new(env!("CARGO_PKG_NAME"))?;
+    let name = env!("CARGO_PKG_NAME");
     let re = Regex::new(&format!("{} [0-9]+:[0-9]", DEVICE_NAME)).unwrap();
     for i in 0..port.port_count() {
         let port_name = port.port_name(i)?;
-        //println!("* IN: {}", port_name);
         if re.is_match(port_name.as_str()) {
             return match port.connect(i, name, callback, data) {
                 Ok(ret) => Ok(ret),
@@ -93,7 +95,7 @@ fn snoop() -> Result<(), Box<Error>> {
             Err(e) => println!("Unparsed: {}; bytes: {:?}", e, bytes),
         }
     };
-    let _midi_in = midi_in_connect_by_name(MidiInput::new(env!("CARGO_PKG_NAME"))?, env!("CARGO_PKG_NAME"), cb, ())?;
+    let _midi_in = midi_in_connect(cb, ())?;
     println!("Snoop started. Use CTRL-C to stop.");
     loop {}
 }
@@ -122,8 +124,8 @@ fn get_bank_desc(bank: u8) -> Result<MpkBankDescriptor, Box<Error>> {
         }
     };
 
-    let mut midi_out = midi_out_connect_by_name(MidiOutput::new(env!("CARGO_PKG_NAME"))?, env!("CARGO_PKG_NAME"))?;
-    let midi_in = midi_in_connect_by_name(MidiInput::new(env!("CARGO_PKG_NAME"))?, env!("CARGO_PKG_NAME"), cb, ())?;
+    let mut midi_out = midi_out_connect()?;
+    let midi_in = midi_in_connect(cb, ())?;
 
     midi_out.send(sysex_get_bank(bank).as_slice())?;
     let bank_desc = rx.recv_timeout(Duration::new(10, 0))?;
