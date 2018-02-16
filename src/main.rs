@@ -95,6 +95,7 @@ where
 
 fn snoop() -> Result<(), Box<Error>> {
     let cb = |_, bytes: &[u8], _: &mut _| {
+        debug!("rx bytes: {:?}", bytes);
         match parse_msg(bytes) {
             Ok(m) => println!("{:?}", m),
             Err(e) => warn!("Unparsed: {}; bytes: {:?}", e, bytes),
@@ -109,6 +110,7 @@ fn passthrough() -> Result<(), Box<Error>> {
     let (tx, rx) = mpsc::channel();
 
     let cb = move |_, bytes: &[u8], _: &mut _| {
+        debug!("rx bytes: {:?}", bytes);
         match parse_msg(&bytes) {
             Ok(m) => println!("{:?}", m),
             Err(e) => warn!("Unparsed: {}; bytes: {:?}", e, bytes),
@@ -214,43 +216,52 @@ fn cmd_dump_yaml(matches: &ArgMatches) -> Result<(), Box<Error>> {
 }
 
 fn app() -> Result<(), Box<Error>> {
-    simplelog::CombinedLogger::init(vec!(simplelog::TermLogger::new(simplelog::LevelFilter::Info, simplelog::Config::default()).unwrap()))?;
-
     let matches = App::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
         .author(env!("CARGO_PKG_AUTHORS"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .subcommand(SubCommand::with_name("show")
-            .about("show commands")
+            .about("Show commands")
             .subcommand(SubCommand::with_name("bank")
-                .about("show bank settings")
+                .about("Show bank settings")
                 .arg(Arg::with_name("bank")
                     .index(1)
                     .required(true)
                 )
             )
             .subcommand(SubCommand::with_name("ram")
-                .about("show current active settings (RAM)"))
+                .about("Show current active settings (RAM)"))
         )
         .subcommand(SubCommand::with_name("dump")
-            .about("dump settings")
+            .about("Dump settings")
             .subcommand(SubCommand::with_name("bank")
-                .about("dump bank settings as yaml")
+                .about("Dump bank settings as yaml")
                 .arg(Arg::with_name("bank")
                     .index(1)
                     .required(true)
                 )
             )
             .subcommand(SubCommand::with_name("ram")
-                .about("dump current active settings (RAM) as yaml"))
+                .about("Dump current active settings (RAM) as yaml"))
         )
         .subcommand(SubCommand::with_name("snoop")
-            .about("snoop MIDI messages")
+            .about("Snoop MIDI messages")
         )
         .subcommand(SubCommand::with_name("passthrough")
-            .about("passthrough (while snooping) MIDI messages")
+            .about("Passthrough (while snooping) MIDI messages")
+        )
+        .arg(Arg::with_name("debug")
+            .required(false)
+            .long("debug")
+            .help("Prints debugging information")
         )
         .get_matches();
+
+    let log_level = match matches.is_present("debug") {
+        false => simplelog::LevelFilter::Info,
+        true => simplelog::LevelFilter::Debug,
+    };
+    simplelog::CombinedLogger::init(vec!(simplelog::TermLogger::new(log_level, simplelog::Config::default()).unwrap()))?;
 
     match matches.subcommand_name() {
         Some("show") => cmd_show(matches.subcommand_matches("show").unwrap()),
