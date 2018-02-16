@@ -30,6 +30,10 @@ use std::time::Duration;
 mod error;
 use error::*;
 
+#[macro_use]
+extern crate log;
+extern crate simplelog;
+
 mod u14;
 mod mpkbank;
 use mpkbank::MpkBankDescriptor;
@@ -93,11 +97,11 @@ fn snoop() -> Result<(), Box<Error>> {
     let cb = |_, bytes: &[u8], _: &mut _| {
         match parse_msg(bytes) {
             Ok(m) => println!("{:?}", m),
-            Err(e) => println!("Unparsed: {}; bytes: {:?}", e, bytes),
+            Err(e) => warn!("Unparsed: {}; bytes: {:?}", e, bytes),
         }
     };
     let _midi_in = midi_in_connect(cb, ())?;
-    println!("Snoop started. Use CTRL-C to stop.");
+    info!("Snoop started. Use CTRL-C to stop.");
     loop {}
 }
 
@@ -107,26 +111,26 @@ fn passthrough() -> Result<(), Box<Error>> {
     let cb = move |_, bytes: &[u8], _: &mut _| {
         match parse_msg(&bytes) {
             Ok(m) => println!("{:?}", m),
-            Err(e) => println!("Unparsed: {}; bytes: {:?}", e, bytes),
+            Err(e) => warn!("Unparsed: {}; bytes: {:?}", e, bytes),
         }
         if let Err(e) = tx.send(Vec::from(bytes)) {
-            println!("Error while sending: {}", e);
+            error!("Error while sending: {}", e);
         }
     };
 
     let mut midi_out = midi_out_connect()?;
     let _midi_in = midi_in_connect(cb, ())?;
 
-    println!("Passthrough started: MIDI messages from input will be sent to output. Use CTRL-C to stop.");
+    info!("Passthrough started: MIDI messages from input will be sent to output. Use CTRL-C to stop.");
     loop {
         match rx.recv() {
             Ok(m) => {
                 if let Err(e) = midi_out.send(m.as_slice()) {
-                    println!("Error while forwarding: {}", e);
+                    error!("Error while forwarding: {}", e);
                 }
             },
             Err(e) => {
-                println!("Error while receiving: {}", e);
+                error!("Error while receiving: {}", e);
             }
         }
     }
@@ -143,16 +147,16 @@ fn get_bank_desc(bank: u8) -> Result<MpkBankDescriptor, Box<Error>> {
         if let Ok(m) = parse_msg(bytes) {
             if let MpkMidiMessage::Bank(bank_rx, d) = m {
                 if bank != bank_rx {
-                    println!("Error: received bank {}, expected {}", bank_rx, bank);
+                    error!("Error: received bank {}, expected {}", bank_rx, bank);
                 }
                 if let Err(e) = tx.send(d) {
-                    println!("Error while sending on channel: {}", e);
+                    error!("Error while sending on channel: {}", e);
                 }
             } else {
-                println!("Unexpected message (ignored): {:?}", m);
+                warn!("Unexpected message (ignored): {:?}", m);
             }
         } else {
-            println!("Unparsed: {:?}", bytes);
+            warn!("Unparsed: {:?}", bytes);
         }
     };
 
@@ -210,6 +214,8 @@ fn cmd_dump_yaml(matches: &ArgMatches) -> Result<(), Box<Error>> {
 }
 
 fn app() -> Result<(), Box<Error>> {
+    simplelog::CombinedLogger::init(vec!(simplelog::TermLogger::new(simplelog::LevelFilter::Info, simplelog::Config::default()).unwrap()))?;
+
     let matches = App::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
         .author(env!("CARGO_PKG_AUTHORS"))
@@ -258,6 +264,6 @@ fn app() -> Result<(), Box<Error>> {
 fn main() {
     match app() {
         Ok(_) => (),
-        Err(err) => println!("Error: {}", err.description())
+        Err(err) => error!("Error: {}", err.description())
     }
 }
