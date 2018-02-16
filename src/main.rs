@@ -40,7 +40,7 @@ extern crate clap;
 use clap::{App, SubCommand, Arg, ArgMatches};
 
 extern crate midir;
-use midir::{MidiInput, MidiOutput, MidiOutputConnection, MidiInputConnection};
+use midir::{MidiInput, MidiOutput, MidiOutputConnection, MidiInputConnection, Ignore};
 
 extern crate regex;
 use regex::Regex;
@@ -73,7 +73,8 @@ fn midi_in_connect <F, T: Send> (callback: F, data: T) -> Result<MidiInputConnec
 where
     F: FnMut(u64, &[u8], &mut T) + Send + 'static
 {
-    let port = MidiInput::new(env!("CARGO_PKG_NAME"))?;
+    let mut port = MidiInput::new(env!("CARGO_PKG_NAME"))?;
+    port.ignore(Ignore::None);
     let name = env!("CARGO_PKG_NAME");
     let re = Regex::new(&format!("{} [0-9]+:[0-9]", DEVICE_NAME)).unwrap();
     for i in 0..port.port_count() {
@@ -98,6 +99,37 @@ fn snoop() -> Result<(), Box<Error>> {
     let _midi_in = midi_in_connect(cb, ())?;
     println!("Snoop started. Use CTRL-C to stop.");
     loop {}
+}
+
+fn passthrough() -> Result<(), Box<Error>> {
+    let (tx, rx) = mpsc::channel();
+
+    let cb = move |_, bytes: &[u8], _: &mut _| {
+        match parse_msg(&bytes) {
+            Ok(m) => println!("{:?}", m),
+            Err(e) => println!("Unparsed: {}; bytes: {:?}", e, bytes),
+        }
+        if let Err(e) = tx.send(Vec::from(bytes)) {
+            println!("Error while sending: {}", e);
+        }
+    };
+
+    let mut midi_out = midi_out_connect()?;
+    let _midi_in = midi_in_connect(cb, ())?;
+
+    println!("Passthrough started: MIDI messages from input will be sent to output. Use CTRL-C to stop.");
+    loop {
+        match rx.recv() {
+            Ok(m) => {
+                if let Err(e) = midi_out.send(m.as_slice()) {
+                    println!("Error while forwarding: {}", e);
+                }
+            },
+            Err(e) => {
+                println!("Error while receiving: {}", e);
+            }
+        }
+    }
 }
 
 fn get_bank_desc(bank: u8) -> Result<MpkBankDescriptor, Box<Error>> {
@@ -209,12 +241,16 @@ fn app() -> Result<(), Box<Error>> {
         .subcommand(SubCommand::with_name("snoop")
             .about("snoop MIDI messages")
         )
+        .subcommand(SubCommand::with_name("passthrough")
+            .about("passthrough (while snooping) MIDI messages")
+        )
         .get_matches();
 
     match matches.subcommand_name() {
         Some("show") => cmd_show(matches.subcommand_matches("show").unwrap()),
         Some("dump") => cmd_dump_yaml(matches.subcommand_matches("dump").unwrap()),
         Some("snoop") => snoop(),
+        Some("passthrough") => passthrough(),
         _ => Err(Box::new(RuntimeError::new("please provide a valid command (use 'help' for information)"))),
     }
 }
