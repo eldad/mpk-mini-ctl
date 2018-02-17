@@ -1,4 +1,4 @@
-# mpk-mini-edit
-[![Build Status](https://travis-ci.org/eldad/mpk-mini-edit.png?branch=master)](https://travis-ci.org/eldad/mpk-mini-edit)
+# mpk-mini-ctl
+[![Build Status](https://travis-ci.org/eldad/mpk-mini-ctl.png?branch=master)](https://travis-ci.org/eldad/mpk-mini-ctl)
 
-Pure rust command line tool for the mpk mini (does not yet have editing capabilities).
+Pure rust command line tool for the mpk mini.
