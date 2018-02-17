@@ -150,7 +150,7 @@ enum Toggle {
 }
 
 impl Toggle {
-    fn from(value: u8) -> Result<Toggle, ParseError> {
+    fn from(value: u8) -> Result<Self, ParseError> {
         match value {
             0 => Ok(Toggle::Off),
             1 => Ok(Toggle::On),
@@ -174,7 +174,7 @@ impl fmt::Debug for Knob {
 }
 
 impl Knob {
-    fn from(raw: [u8; 3]) -> Knob {
+    fn from(raw: [u8; 3]) -> Self {
         Knob {
             control: raw[0],
             min: raw[1],
@@ -191,7 +191,7 @@ enum PadMode {
 }
 
 impl PadMode {
-    fn from(value: u8) -> Result<PadMode, ParseError> {
+    fn from(value: u8) -> Result<Self, ParseError> {
         match value {
             0 => Ok(PadMode::Momentary),
             1 => Ok(PadMode::Toggle),
@@ -201,7 +201,7 @@ impl PadMode {
 }
 
 impl Default for PadMode {
-    fn default() -> PadMode {
+    fn default() -> Self {
         PadMode::Momentary
     }
 }
@@ -222,7 +222,7 @@ impl fmt::Debug for Pad {
 }
 
 impl Pad {
-    fn from(value: [u8; 4]) -> Result<Pad, ParseError> {
+    fn from(value: [u8; 4]) -> Result<Self, ParseError> {
         Ok(Pad {
             note: Note { value: value[0] },
             program: value[1],
@@ -240,7 +240,7 @@ enum ClockSource {
 }
 
 impl ClockSource {
-    fn from(value: u8) -> Result<ClockSource, ParseError> {
+    fn from(value: u8) -> Result<Self, ParseError> {
         match value {
             0 => Ok(ClockSource::Internal),
             1 => Ok(ClockSource::External),
@@ -263,7 +263,7 @@ enum ArpeggiatorTimeDivision {
 }
 
 impl ArpeggiatorTimeDivision {
-    fn from(value: u8) -> Result<ArpeggiatorTimeDivision, ParseError> {
+    fn from(value: u8) -> Result<Self, ParseError> {
         match value {
             0 => Ok(ArpeggiatorTimeDivision::_4),
             1 => Ok(ArpeggiatorTimeDivision::_4T),
@@ -297,7 +297,7 @@ enum ArpeggiatorMode {
 }
 
 impl ArpeggiatorMode {
-    fn from(value: u8) -> Result<ArpeggiatorMode, ParseError> {
+    fn from(value: u8) -> Result<Self, ParseError> {
         match value {
             0 => Ok(ArpeggiatorMode::Up),
             1 => Ok(ArpeggiatorMode::Down),
@@ -322,7 +322,7 @@ enum Swing {
 }
 
 impl Swing {
-    fn from(value: u8) -> Result<Swing, ParseError> {
+    fn from(value: u8) -> Result<Self, ParseError> {
         match value {
             0 => Ok(Swing::_50),
             1 => Ok(Swing::_55),
@@ -351,7 +351,7 @@ enum Joystick {
 }
 
 impl Joystick {
-    fn from(bytes: [u8; 3]) -> Result<Joystick, ParseError> {
+    fn from(bytes: [u8; 3]) -> Result<Self, ParseError> {
         match bytes[0] {
             0 => Ok(Joystick::Pitchbend),
             1 => Ok(Joystick::ControlChannel(bytes[1])),
@@ -448,7 +448,7 @@ impl MpkBankDescriptor {
         }
     }
 
-    pub fn from(bytes: &[u8]) -> Result<MpkBankDescriptor, ParseError> {
+    pub fn from(bytes: &[u8]) -> Result<Self, ParseError> {
         if bytes.len() != 108 {
             Err(ParseError::new(&format!("Unexpected length for bank descriptor ({}, expected 108)", bytes.len())))
         } else {
