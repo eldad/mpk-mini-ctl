@@ -43,8 +43,15 @@ const MIDI_PITCH_BEND: u8 = 0xe0;
 
 // MPK-Specific
 const SYSEX_MPK_BANK: [u8; 5] = [0x00, 0x26, 0x67, 0x00, 0x6d];
-pub fn sysex_get_bank(id: u8) -> Vec<u8> {
-    vec!(MIDI_SYSEX, SYSEX_AKAI, 0x00, 0x26, 0x66, 0x00, 0x01, id, MIDI_SYSEX_END)
+pub fn sysex_get_bank(bank: u8) -> Vec<u8> {
+    vec!(MIDI_SYSEX, SYSEX_AKAI, 0x00, 0x26, 0x66, 0x00, 0x01, bank, MIDI_SYSEX_END)
+}
+
+pub fn sysex_set_bank(bank: u8, bank_desc: MpkBankDescriptor) -> Vec<u8> {
+    let mut ret = vec!(MIDI_SYSEX, SYSEX_AKAI, 0x00, 0x26, 0x64, 0x00, 0x6d, bank);
+    append_array!(ret, &bank_desc.into_bytes());
+    ret.push(MIDI_SYSEX_END);
+    ret
 }
 
 // u14, little endian, only needed for snoop.

@@ -31,12 +31,6 @@ use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use serde::de::{Visitor, Unexpected};
 use serde::de;
 
-macro_rules! append_array {
-    ($vec:expr, $arr:expr) => {
-        $vec.append(&mut $arr.into_iter().map(|&x| x).collect());
-    };
-}
-
 // Note
 #[derive(Copy, Clone, Default)]
 pub struct Note {

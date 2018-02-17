@@ -35,64 +35,27 @@ use error::*;
 extern crate log;
 extern crate simplelog;
 
-mod u14;
-mod mpkbank;
-use mpkbank::MpkBankDescriptor;
-mod mpkmidi;
-use mpkmidi::*;
-
-extern crate clap;
-use clap::{App, SubCommand, Arg, ArgMatches};
-
-extern crate midir;
-use midir::{MidiInput, MidiOutput, MidiOutputConnection, MidiInputConnection, Ignore};
-
-extern crate regex;
-use regex::Regex;
-
 #[macro_use]
 extern crate serde_derive;
-
 extern crate serde;
 extern crate serde_yaml;
 
-const DEVICE_NAME: &str = "MPKmini2";
+extern crate clap;
+extern crate regex;
+extern crate midir;
 
-fn midi_out_connect() -> Result<MidiOutputConnection, Box<Error>> {
-    let port = MidiOutput::new(env!("CARGO_PKG_NAME"))?;
-    let name = env!("CARGO_PKG_NAME");
-    let re = Regex::new(&format!("{} [0-9]+:[0-9]", DEVICE_NAME)).unwrap();
-    for i in 0..port.port_count() {
-        let port_name = port.port_name(i)?;
-        if re.is_match(port_name.as_str()) {
-            return match port.connect(i, name) {
-                Ok(ret) => Ok(ret),
-                Err(e) => Err(Box::new(e)),
-            }
-        }
-    }
-    Err(Box::new(RuntimeError::new(&format!("MIDI Out port '{}' not found.", name))))
-}
+#[macro_use]
+mod util;
 
-fn midi_in_connect <F, T: Send> (callback: F, data: T) -> Result<MidiInputConnection<T>, Box<Error>>
-where
-    F: FnMut(u64, &[u8], &mut T) + Send + 'static
-{
-    let mut port = MidiInput::new(env!("CARGO_PKG_NAME"))?;
-    port.ignore(Ignore::None);
-    let name = env!("CARGO_PKG_NAME");
-    let re = Regex::new(&format!("{} [0-9]+:[0-9]", DEVICE_NAME)).unwrap();
-    for i in 0..port.port_count() {
-        let port_name = port.port_name(i)?;
-        if re.is_match(port_name.as_str()) {
-            return match port.connect(i, name, callback, data) {
-                Ok(ret) => Ok(ret),
-                Err(e) => Err(Box::new(e)),
-            }
-        }
-    }
-    Err(Box::new(RuntimeError::new(&format!("MIDI In port '{}' not found.", name))))
-}
+mod u14;
+mod mpkbank;
+mod mpkmidi;
+
+use clap::{App, SubCommand, Arg, ArgMatches};
+
+use mpkbank::MpkBankDescriptor;
+use mpkmidi::*;
+use util::*;
 
 fn snoop() -> Result<(), Box<Error>> {
     let cb = |_, bytes: &[u8], _: &mut _| {
@@ -140,9 +103,7 @@ fn passthrough() -> Result<(), Box<Error>> {
 }
 
 fn get_bank_desc(bank: u8) -> Result<MpkBankDescriptor, Box<Error>> {
-    if bank > 4 {
-        return Err(Box::new(RuntimeError::new("Bank value must be between 0 and 4 (0 = RAM)")))
-    }
+    check_bank_value!(bank);
 
     let (tx, rx) = mpsc::channel();
 
@@ -173,6 +134,16 @@ fn get_bank_desc(bank: u8) -> Result<MpkBankDescriptor, Box<Error>> {
     midi_in.close();
 
     Ok(bank_desc)
+}
+
+fn set_bank_from_desc(bank:u8, bank_desc: MpkBankDescriptor) -> Result<(), Box<Error>> {
+    check_bank_value!(bank);
+
+    let mut midi_out = midi_out_connect()?;
+    midi_out.send(&sysex_set_bank(bank, bank_desc))?;
+    midi_out.close();
+
+    Ok(())
 }
 
 fn show_bank(bank: u8) -> Result<(), Box<Error>> {
@@ -218,9 +189,17 @@ fn cmd_dump_yaml(matches: &ArgMatches) -> Result<(), Box<Error>> {
 
 fn cmd_read_yaml(matches: &ArgMatches) -> Result<(), Box<Error>> {
     let filename = matches.value_of("filename").unwrap().parse::<String>()?;
-    let bankdesc: MpkBankDescriptor = serde_yaml::from_reader(File::open(&filename)?)?;
-    println!("{}", bankdesc);
-    debug!("{:?}", bankdesc.into_bytes());
+    let bank_desc: MpkBankDescriptor = serde_yaml::from_reader(File::open(&filename)?)?;
+    println!("{}", bank_desc);
+    debug!("{:?}", bank_desc.into_bytes());
+    Ok(())
+}
+
+fn cmd_send_yaml(matches: &ArgMatches) -> Result<(), Box<Error>> {
+    let filename = matches.value_of("filename").unwrap().parse::<String>()?;
+    let bank_desc: MpkBankDescriptor = serde_yaml::from_reader(File::open(&filename)?)?;
+    let bank = matches.value_of("destination").unwrap().parse::<u8>()?;
+    set_bank_from_desc(bank, bank_desc)?;
     Ok(())
 }
 
@@ -266,6 +245,18 @@ fn app() -> Result<(), Box<Error>> {
                 .required(true)
             )
         )
+        .subcommand(SubCommand::with_name("send")
+            .about("Read yaml bank descriptor from file and send it to the device")
+            .arg(Arg::with_name("filename")
+                .index(1)
+                .required(true)
+            )
+            .arg(Arg::with_name("destination")
+                .index(2)
+                .required(true)
+                .help("0 for RAM, 1-4 for banks")
+            )
+        )
         .arg(Arg::with_name("debug")
             .required(false)
             .long("debug")
@@ -285,6 +276,7 @@ fn app() -> Result<(), Box<Error>> {
         Some("snoop") => snoop(),
         Some("passthrough") => passthrough(),
         Some("read") => cmd_read_yaml(matches.subcommand_matches("read").unwrap()),
+        Some("send") => cmd_send_yaml(matches.subcommand_matches("send").unwrap()),
         _ => Err(Box::new(RuntimeError::new("please provide a valid command (use 'help' for information)"))),
     }
 }
