@@ -31,6 +31,12 @@ use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use serde::de::{Visitor, Unexpected};
 use serde::de;
 
+macro_rules! append_array {
+    ($vec:expr, $arr:expr) => {
+        $vec.append(&mut $arr.into_iter().map(|&x| x).collect());
+    };
+}
+
 // Note
 #[derive(Copy, Clone, Default)]
 pub struct Note {
@@ -140,8 +146,8 @@ fn test_note_parse_str() {
 // Toggle
 #[derive(Serialize, Deserialize, Copy, Clone, Debug)]
 enum Toggle {
-    Off,
-    On,
+    Off = 0,
+    On = 1,
 }
 
 impl Toggle {
@@ -176,13 +182,17 @@ impl Knob {
             max: raw[2],
         }
     }
+
+    fn to_bytes(&self) -> [u8; 3] {
+        [self.control, self.min, self.max]
+    }
 }
 
 // PadMode
 #[derive(Serialize, Deserialize, Copy, Clone, Debug)]
 enum PadMode {
-    Toggle,
-    Momentary,
+    Momentary = 0,
+    Toggle = 1,
 }
 
 impl PadMode {
@@ -224,6 +234,10 @@ impl Pad {
             control: value[2],
             mode: PadMode::from(value[3])?,
         })
+    }
+
+    fn to_bytes(&self) -> [u8; 4] {
+        [self.note.value, self.control, self.program, self.mode as u8]
     }
 }
 
@@ -283,12 +297,12 @@ impl fmt::Display for ArpeggiatorTimeDivision {
 // ArpeggiatorMode
 #[derive(Serialize, Deserialize, Debug)]
 enum ArpeggiatorMode {
-    Up,
-    Down,
-    Exclusive,
-    Inclusive,
-    Order,
-    Random,
+    Up = 0,
+    Down = 1,
+    Exclusive = 2,
+    Inclusive = 3,
+    Order = 4,
+    Random = 5,
 }
 
 impl ArpeggiatorMode {
@@ -308,12 +322,12 @@ impl ArpeggiatorMode {
 // Swing
 #[derive(Serialize, Deserialize, Debug)]
 enum Swing {
-    _50,
-    _55,
-    _57,
-    _59,
-    _61,
-    _64,
+    _50 = 0,
+    _55 = 1,
+    _57 = 2,
+    _59 = 3,
+    _61 = 4,
+    _64 = 5,
 }
 
 impl Swing {
@@ -354,9 +368,19 @@ impl Joystick {
             _ => Err(ParseError::new(&format!("Invalid joystick mode {}", bytes[1]))),
         }
     }
+
+    fn to_bytes(&self) -> [u8; 3] {
+        match *self {
+            Joystick::Pitchbend => [0; 3],
+            Joystick::ControlChannel(c) => { [1, c, 0] },
+            Joystick::SplitControlChannels(c1, c2) => { [2, c1, c2 ]}
+        }
+    }
 }
 
 // MpkBankDescriptor
+const MPK_BANK_DESCRIPTOR_LENGTH: usize = 108;
+
 #[derive(Serialize, Deserialize)]
 pub struct MpkBankDescriptor {
     octave: u8,
@@ -444,8 +468,8 @@ impl MpkBankDescriptor {
     }
 
     pub fn from(bytes: &[u8]) -> Result<Self, ParseError> {
-        if bytes.len() != 108 {
-            Err(ParseError::new(&format!("Unexpected length for bank descriptor ({}, expected 108)", bytes.len())))
+        if bytes.len() != MPK_BANK_DESCRIPTOR_LENGTH {
+            Err(ParseError::new(&format!("Unexpected length for bank descriptor ({}, expected {})", bytes.len(), MPK_BANK_DESCRIPTOR_LENGTH)))
         } else {
             Ok(MpkBankDescriptor {
                 pad_midi_channel: bytes[0],
@@ -467,5 +491,34 @@ impl MpkBankDescriptor {
                 transpose: bytes[107],
             })
         }
+    }
+
+    pub fn into_bytes(self) -> Vec<u8> {
+        let mut ret: Vec<u8> = vec!(
+            self.pad_midi_channel,
+            self.keybed_channel,
+            self.octave,
+            self.arpeggiator as u8,
+            self.arpeggiator_mode as u8,
+            self.arpeggiator_time_division as u8,
+            self.clock_source as u8,
+            self.latch as u8,
+            self.swing as u8,
+            self.tempo_taps,
+        );
+        append_array!(ret, self.tempo.to_device().unwrap());
+        ret.push(self.arpeggiator_octave);
+        append_array!(ret, self.joystick_x.to_bytes());
+        append_array!(ret, self.joystick_y.to_bytes());
+        for pad in &self.pads {
+            append_array!(ret, pad.to_bytes());
+        }
+        for knob in &self.knobs {
+            append_array!(ret, knob.to_bytes());
+        }
+        ret.push(self.transpose);
+
+        assert_eq!(ret.len(), MPK_BANK_DESCRIPTOR_LENGTH);
+        ret
     }
 }

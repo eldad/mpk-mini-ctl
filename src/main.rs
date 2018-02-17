@@ -220,6 +220,7 @@ fn cmd_read_yaml(matches: &ArgMatches) -> Result<(), Box<Error>> {
     let filename = matches.value_of("filename").unwrap().parse::<String>()?;
     let bankdesc: MpkBankDescriptor = serde_yaml::from_reader(File::open(&filename)?)?;
     println!("{}", bankdesc);
+    debug!("{:?}", bankdesc.into_bytes());
     Ok(())
 }
 
