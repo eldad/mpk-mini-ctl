@@ -97,7 +97,7 @@ where
 fn snoop() -> Result<(), Box<Error>> {
     let cb = |_, bytes: &[u8], _: &mut _| {
         debug!("rx bytes: {:?}", bytes);
-        match parse_msg(bytes) {
+        match MpkMidiMessage::parse_msg(bytes) {
             Ok(m) => println!("{:?}", m),
             Err(e) => warn!("Unparsed: {}; bytes: {:?}", e, bytes),
         }
@@ -112,7 +112,7 @@ fn passthrough() -> Result<(), Box<Error>> {
 
     let cb = move |_, bytes: &[u8], _: &mut _| {
         debug!("rx bytes: {:?}", bytes);
-        match parse_msg(&bytes) {
+        match MpkMidiMessage::parse_msg(&bytes) {
             Ok(m) => println!("{:?}", m),
             Err(e) => warn!("Unparsed: {}; bytes: {:?}", e, bytes),
         }
@@ -147,7 +147,7 @@ fn get_bank_desc(bank: u8) -> Result<MpkBankDescriptor, Box<Error>> {
     let (tx, rx) = mpsc::channel();
 
     let cb = move |_, bytes: &[u8], _: &mut _| {
-        if let Ok(m) = parse_msg(bytes) {
+        if let Ok(m) = MpkMidiMessage::parse_msg(bytes) {
             if let MpkMidiMessage::Bank(bank_rx, d) = m {
                 if bank != bank_rx {
                     error!("Error: received bank {}, expected {}", bank_rx, bank);

@@ -72,55 +72,57 @@ pub enum MpkMidiMessage {
     Unknown(Vec<u8>),
 }
 
-pub fn parse_sysex(bytes: &[u8]) -> Result<MpkMidiMessage, ParseError> {
-    if bytes.len() < 3 {
-        return Err(ParseError::new(&format!("SysEx rx error: runt: {:?}", bytes)));
-    }
-    if *bytes.last().unwrap() != MIDI_SYSEX_END {
-        return Err(ParseError::new(&format!("SysEx rx error: malformed: {:?}", bytes)));
-    }
-    if bytes[1] != SYSEX_AKAI {
-        return Err(ParseError::new(&format!("SysEx rx error: non-AKAI: (manufacturer={:x}, expected={:x}) {:?}", bytes[1], SYSEX_AKAI, bytes)));
+impl MpkMidiMessage {
+    fn parse_sysex(bytes: &[u8]) -> Result<Self, ParseError> {
+        if bytes.len() < 3 {
+            return Err(ParseError::new(&format!("SysEx rx error: runt: {:?}", bytes)));
+        }
+        if *bytes.last().unwrap() != MIDI_SYSEX_END {
+            return Err(ParseError::new(&format!("SysEx rx error: malformed: {:?}", bytes)));
+        }
+        if bytes[1] != SYSEX_AKAI {
+            return Err(ParseError::new(&format!("SysEx rx error: non-AKAI: (manufacturer={:x}, expected={:x}) {:?}", bytes[1], SYSEX_AKAI, bytes)));
+        }
+
+        let payload = &bytes[2..bytes.len()-1];
+        if payload.starts_with(&SYSEX_MPK_BANK) {
+            Ok(MpkMidiMessage::Bank(payload[SYSEX_MPK_BANK.len()], MpkBankDescriptor::from(&payload[SYSEX_MPK_BANK.len()+1..])? ))
+        } else {
+            Err(ParseError::new(&format!("WARNING: unknown AKAI sysex message {:?}", payload)))
+        }
     }
 
-    let payload = &bytes[2..bytes.len()-1];
-    if payload.starts_with(&SYSEX_MPK_BANK) {
-        Ok(MpkMidiMessage::Bank(payload[SYSEX_MPK_BANK.len()], MpkBankDescriptor::from(&payload[SYSEX_MPK_BANK.len()+1..])? ))
-    } else {
-        Err(ParseError::new(&format!("WARNING: unknown AKAI sysex message {:?}", payload)))
-    }
-}
-
-fn parse_channel_msg(bytes: &[u8]) -> Result<MpkMidiMessage, ParseError> {
-    let channel = bytes[0] & 0x0f;
-    match bytes[0] & 0xf0 {
-        MIDI_NOTE_OFF => Ok(MpkMidiMessage::NoteOff(channel, bytes[1], bytes[2])),
-        MIDI_NOTE_ON => Ok(MpkMidiMessage::NoteOn(channel, bytes[1], bytes[2])),
-        MIDI_POLYPHONIC_PRESSURE => Ok(MpkMidiMessage::Unparsed),
-        MIDI_CONTROL_CHANGE => Ok(MpkMidiMessage::ControlChange(channel, bytes[1], bytes[2])),
-        MIDI_PROGRAM_CHANGE => Ok(MpkMidiMessage::ProgramChange(channel, bytes[1])),
-        MIDI_CHANNEL_PRESSURE => Ok(MpkMidiMessage::Unparsed),
-        MIDI_PITCH_BEND => Ok(MpkMidiMessage::PitchBend(channel, u14le_to_u16!(bytes, 1))),
-        _ => unreachable!(),
-    }
-}
-
-pub fn parse_msg(bytes: &[u8]) -> Result<MpkMidiMessage, ParseError> {
-    if bytes.len() == 0 {
-        return Err(ParseError::new(&format!("ERROR: received message with length 0")));
+    fn parse_channel_msg(bytes: &[u8]) -> Result<Self, ParseError> {
+        let channel = bytes[0] & 0x0f;
+        match bytes[0] & 0xf0 {
+            MIDI_NOTE_OFF => Ok(MpkMidiMessage::NoteOff(channel, bytes[1], bytes[2])),
+            MIDI_NOTE_ON => Ok(MpkMidiMessage::NoteOn(channel, bytes[1], bytes[2])),
+            MIDI_POLYPHONIC_PRESSURE => Ok(MpkMidiMessage::Unparsed),
+            MIDI_CONTROL_CHANGE => Ok(MpkMidiMessage::ControlChange(channel, bytes[1], bytes[2])),
+            MIDI_PROGRAM_CHANGE => Ok(MpkMidiMessage::ProgramChange(channel, bytes[1])),
+            MIDI_CHANNEL_PRESSURE => Ok(MpkMidiMessage::Unparsed),
+            MIDI_PITCH_BEND => Ok(MpkMidiMessage::PitchBend(channel, u14le_to_u16!(bytes, 1))),
+            _ => unreachable!(),
+        }
     }
 
-    if bytes[0] < 127 {
-        return Err(ParseError::new(&format!("ERROR: received message with MSB unset (<127)")));
-    }
+    pub fn parse_msg(bytes: &[u8]) -> Result<Self, ParseError> {
+        if bytes.len() == 0 {
+            return Err(ParseError::new(&format!("ERROR: received message with length 0")));
+        }
 
-    if bytes[0] & 0xf0 != 0xf0 {
-        return parse_channel_msg(bytes);
-    }
+        if bytes[0] < 127 {
+            return Err(ParseError::new(&format!("ERROR: received message with MSB unset (<127)")));
+        }
 
-    match bytes[0] {
-        MIDI_SYSEX => parse_sysex(bytes),
-        MIDI_RESET => Ok(MpkMidiMessage::Reset),
-        _ => Ok(MpkMidiMessage::Unknown(Vec::from(bytes))),
+        if bytes[0] & 0xf0 != 0xf0 {
+            return MpkMidiMessage::parse_channel_msg(bytes);
+        }
+
+        match bytes[0] {
+            MIDI_SYSEX => MpkMidiMessage::parse_sysex(bytes),
+            MIDI_RESET => Ok(MpkMidiMessage::Reset),
+            _ => Ok(MpkMidiMessage::Unknown(Vec::from(bytes))),
+        }
     }
 }
