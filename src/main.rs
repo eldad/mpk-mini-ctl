@@ -26,6 +26,7 @@
 use std::error::Error;
 use std::sync::mpsc;
 use std::time::Duration;
+use std::fs::File;
 
 mod error;
 use error::*;
@@ -215,6 +216,13 @@ fn cmd_dump_yaml(matches: &ArgMatches) -> Result<(), Box<Error>> {
     }
 }
 
+fn cmd_read_yaml(matches: &ArgMatches) -> Result<(), Box<Error>> {
+    let filename = matches.value_of("filename").unwrap().parse::<String>()?;
+    let bankdesc: MpkBankDescriptor = serde_yaml::from_reader(File::open(&filename)?)?;
+    println!("{:?}", bankdesc);
+    Ok(())
+}
+
 fn app() -> Result<(), Box<Error>> {
     let matches = App::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
@@ -250,6 +258,13 @@ fn app() -> Result<(), Box<Error>> {
         .subcommand(SubCommand::with_name("passthrough")
             .about("Passthrough (while snooping) MIDI messages")
         )
+        .subcommand(SubCommand::with_name("read")
+            .about("Read yaml bank descriptor from file and display it")
+            .arg(Arg::with_name("filename")
+                .index(1)
+                .required(true)
+            )
+        )
         .arg(Arg::with_name("debug")
             .required(false)
             .long("debug")
@@ -268,6 +283,7 @@ fn app() -> Result<(), Box<Error>> {
         Some("dump") => cmd_dump_yaml(matches.subcommand_matches("dump").unwrap()),
         Some("snoop") => snoop(),
         Some("passthrough") => passthrough(),
+        Some("read") => cmd_read_yaml(matches.subcommand_matches("read").unwrap()),
         _ => Err(Box::new(RuntimeError::new("please provide a valid command (use 'help' for information)"))),
     }
 }
