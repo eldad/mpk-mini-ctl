@@ -177,7 +177,7 @@ fn get_bank_desc(bank: u8) -> Result<MpkBankDescriptor, Box<Error>> {
 
 fn show_bank(bank: u8) -> Result<(), Box<Error>> {
     let bank_desc = get_bank_desc(bank)?;
-    println!("Bank {}:\n{:?}", bank, bank_desc);
+    println!("Bank {}:\n{}", bank, bank_desc);
     Ok(())
 }
 
@@ -219,7 +219,7 @@ fn cmd_dump_yaml(matches: &ArgMatches) -> Result<(), Box<Error>> {
 fn cmd_read_yaml(matches: &ArgMatches) -> Result<(), Box<Error>> {
     let filename = matches.value_of("filename").unwrap().parse::<String>()?;
     let bankdesc: MpkBankDescriptor = serde_yaml::from_reader(File::open(&filename)?)?;
-    println!("{:?}", bankdesc);
+    println!("{}", bankdesc);
     Ok(())
 }
 

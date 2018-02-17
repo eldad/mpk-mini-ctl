@@ -67,7 +67,6 @@ impl<'de> Deserialize<'de> for Note {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where D: Deserializer<'de>
     {
-
         Ok(deserializer.deserialize_str(NoteVisitor)?)
     }
 }
@@ -386,7 +385,7 @@ pub struct MpkBankDescriptor {
     pads: [Pad; 16],
 }
 
-impl fmt::Debug for MpkBankDescriptor {
+impl fmt::Display for MpkBankDescriptor {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut sb = String::new();
         sb.push_str(&format!("PAD Channel: {}\n", self.pad_midi_channel + 1));
@@ -414,6 +413,13 @@ impl fmt::Debug for MpkBankDescriptor {
             sb.push_str(&format!("Pad {}{}: {:?}\n", padbank, i % 8 + 1, pad));
         }
         write!(f, "{}", sb)
+    }
+}
+
+impl fmt::Debug for MpkBankDescriptor {
+    /* TODO: write raw bytes */
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self)
     }
 }
 
