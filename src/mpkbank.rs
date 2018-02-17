@@ -72,26 +72,6 @@ impl<'de> Deserialize<'de> for Note {
 }
 
 impl Note {
-    fn note_octave(&self) -> (&str, i8) {
-        let octave: i8 = (self.value / 12) as i8 - 1;
-        let note = match self.value % 12 {
-            0 => "C",
-            1 => "C#/Db",
-            2 => "D",
-            3 => "D#/Eb",
-            4 => "E",
-            5 => "F",
-            6 => "F#/Gb",
-            7 => "G",
-            8 => "G#/Ab",
-            9 => "A",
-            10 => "A#/Bb",
-            11 => "B",
-            _ => unreachable!(),
-        };
-        (note, octave)
-    }
-
     fn from_str(s: &str) -> Result<Self, ParseError> {
         let note_octave: Vec<&str> = s.split(' ').collect();
         if note_octave.len() != 2 {
@@ -117,7 +97,22 @@ impl Note {
     }
 
     pub fn as_str(&self) -> String {
-        let (note, octave) = self.note_octave();
+        let octave: i8 = (self.value / 12) as i8 - 1;
+        let note = match self.value % 12 {
+            0 => "C",
+            1 => "C#/Db",
+            2 => "D",
+            3 => "D#/Eb",
+            4 => "E",
+            5 => "F",
+            6 => "F#/Gb",
+            7 => "G",
+            8 => "G#/Ab",
+            9 => "A",
+            10 => "A#/Bb",
+            11 => "B",
+            _ => unreachable!(),
+        };
         format!("{} {}", note, octave)
     }
 }
