@@ -27,14 +27,53 @@ use std::fmt;
 use u14::U14BE;
 use error::ParseError;
 
+use serde::{Serialize, Serializer, Deserialize, Deserializer};
+use serde::de::{Visitor, Unexpected};
+use serde::de;
+
 // Note
-#[derive(Serialize, Deserialize, Copy, Clone, Default)]
-struct Note {
+#[derive(Copy, Clone, Default)]
+pub struct Note {
     value: u8,
 }
 
-impl fmt::Display for Note {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl Serialize for Note {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where S: Serializer
+    {
+        serializer.serialize_str(&format!("{}",self))
+    }
+}
+
+struct NoteVisitor;
+impl<'de> Visitor<'de> for NoteVisitor {
+    type Value = Note;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("note and octave string separated by space (e.g., `B# 4`)")
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result <Note, E>
+        where E: de::Error
+    {
+        match Note::from_str(value) {
+            Ok(n) => Ok(n),
+            Err(_) => Err(de::Error::invalid_value(Unexpected::Str(value), &self)),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for Note {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where D: Deserializer<'de>
+    {
+
+        Ok(deserializer.deserialize_str(NoteVisitor)?)
+    }
+}
+
+impl Note {
+    fn note_octave(&self) -> (&str, i8) {
         let octave: i8 = (self.value / 12) as i8 - 1;
         let note = match self.value % 12 {
             0 => "C",
@@ -51,8 +90,57 @@ impl fmt::Display for Note {
             11 => "B",
             _ => unreachable!(),
         };
-        f.pad(&format!("{} {} ({})", note, octave, self.value))
+        (note, octave)
     }
+
+    fn from_str(s: &str) -> Result<Self, ParseError> {
+        let note_octave: Vec<&str> = s.split(' ').collect();
+        if note_octave.len() != 2 {
+            return Err(ParseError::new(&format!("cannot parse note string {} (expected string with exactly one space)", s)));
+        }
+        let note = match note_octave[0] {
+            "C"     => 0,
+            "C#/Db" => 1, "C#" => 1, "Db" => 1,
+            "D"     => 2,
+            "D#/Eb" => 3, "D#" => 3, "Eb" => 3,
+            "E"     => 4,
+            "F"     => 5,
+            "F#/Gb" => 6, "F#" => 6, "Gb" => 6,
+            "G"     => 7,
+            "G#/Ab" => 8, "G#" => 8, "Ab" => 8,
+            "A"     => 9,
+            "A#/Bb" => 10, "A#" => 10, "Bb" => 10,
+            "B"     => 11,
+            _ => return Err(ParseError::new(&format!("cannot parse note {} from {}", note_octave[0], s))),
+        };
+        let octave: i8 = note_octave[1].parse::<i8>().unwrap(); // TODO: wrap
+        Ok(Note { value: ((octave + 1) * 12) as u8 + note })
+    }
+
+    pub fn as_str(&self) -> String {
+        let (note, octave) = self.note_octave();
+        format!("{} {}", note, octave)
+    }
+}
+
+impl fmt::Display for Note {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.pad(&self.as_str())
+    }
+}
+
+impl fmt::Debug for Note {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.pad(&format!("{} ({})", self.as_str(), self.value))
+    }
+}
+
+#[test]
+fn test_note_parse_str() {
+    assert_eq!(0, Note::from_str("C -1").unwrap().value);
+    assert_eq!(1, Note::from_str("C# -1").unwrap().value);
+    assert_eq!(1, Note::from_str("C#/Db -1").unwrap().value);
+    assert_eq!(127, Note::from_str("G 9").unwrap().value);
 }
 
 // Toggle
