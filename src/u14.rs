@@ -24,7 +24,9 @@
  */
 
 use std::fmt;
-use error::ParseError;
+use crate::error::ParseError;
+
+use serde_derive::{Serialize, Deserialize};
 
 /* 14 bits unsigned, big endian */
 #[derive(Serialize, Deserialize)]
