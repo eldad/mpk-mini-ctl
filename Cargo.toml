@@ -3,6 +3,7 @@ name = "mpk-mini-ctl"
 version = "0.1.0"
 authors = ["Eldad Zack <eldad@fogrefinery.com>"]
 description = "AKAI MPK Mini mkII Control Tool"
+edition = "2018"
 
 [dependencies]
 midir = "0.5.0"

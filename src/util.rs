@@ -24,7 +24,7 @@
  */
 
 use std::error::Error;
-use error::RuntimeError;
+use crate::error::RuntimeError;
 
 use midir::{MidiInput, MidiOutput, MidiOutputConnection, MidiInputConnection, Ignore};
 use regex::Regex;

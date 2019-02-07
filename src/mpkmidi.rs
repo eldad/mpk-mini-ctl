@@ -23,8 +23,8 @@
  *
  */
 
-use mpkbank::MpkBankDescriptor;
-use error::ParseError;
+use crate::mpkbank::MpkBankDescriptor;
+use crate::error::ParseError;
 
 // https://www.midi.org/specifications/item/table-1-summary-of-midi-message
 const MIDI_SYSEX: u8 = 0xf0;

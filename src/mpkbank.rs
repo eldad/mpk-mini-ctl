@@ -24,8 +24,8 @@
  */
 
 use std::fmt;
-use u14::U14BE;
-use error::ParseError;
+use crate::u14::U14BE;
+use crate::error::ParseError;
 
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use serde::de::{Visitor, Unexpected};

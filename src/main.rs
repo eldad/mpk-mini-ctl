@@ -29,7 +29,7 @@ use std::time::Duration;
 use std::fs::File;
 
 mod error;
-use error::*;
+use crate::error::*;
 
 #[macro_use]
 extern crate log;
@@ -53,9 +53,9 @@ mod mpkmidi;
 
 use clap::{App, SubCommand, Arg, ArgMatches};
 
-use mpkbank::MpkBankDescriptor;
-use mpkmidi::*;
-use util::*;
+use crate::mpkbank::MpkBankDescriptor;
+use crate::mpkmidi::*;
+use crate::util::*;
 
 fn snoop() -> Result<(), Box<Error>> {
     let cb = |_, bytes: &[u8], _: &mut _| {
