@@ -31,6 +31,8 @@ use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use serde::de::{Visitor, Unexpected};
 use serde::de;
 
+use serde_derive::{Serialize, Deserialize};
+
 // Note
 #[derive(Copy, Clone, Default)]
 pub struct Note {

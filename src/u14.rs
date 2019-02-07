@@ -26,6 +26,8 @@
 use std::fmt;
 use crate::error::ParseError;
 
+use serde_derive::{Serialize, Deserialize};
+
 /* 14 bits unsigned, big endian */
 #[derive(Serialize, Deserialize)]
 pub struct U14BE {

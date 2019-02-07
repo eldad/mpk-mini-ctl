@@ -31,18 +31,7 @@ use std::fs::File;
 mod error;
 use crate::error::*;
 
-#[macro_use]
-extern crate log;
-extern crate simplelog;
-
-#[macro_use]
-extern crate serde_derive;
-extern crate serde;
-extern crate serde_yaml;
-
-extern crate clap;
-extern crate regex;
-extern crate midir;
+use log::{debug, info, error, warn, log};
 
 #[macro_use]
 mod util;
