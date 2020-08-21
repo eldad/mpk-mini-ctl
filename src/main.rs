@@ -27,6 +27,7 @@ use std::error::Error;
 use std::sync::mpsc;
 use std::time::Duration;
 use std::fs::File;
+use std::thread::sleep;
 
 mod error;
 use crate::error::*;
@@ -56,7 +57,9 @@ fn snoop() -> Result<(), Box<dyn Error>> {
     };
     let _midi_in = midi_in_connect(cb, ())?;
     info!("Snoop started. Use CTRL-C to stop.");
-    loop {}
+    loop {
+        sleep(Duration::from_millis(250));
+    }
 }
 
 fn passthrough() -> Result<(), Box<dyn Error>> {
