@@ -46,7 +46,7 @@ impl Error for RuntimeError {
         &self.reason
     }
 
-    fn cause(&self) -> Option<&Error> {
+    fn cause(&self) -> Option<&dyn Error> {
         None
     }
 }
@@ -78,7 +78,7 @@ impl Error for ParseError {
         &self.reason
     }
 
-    fn cause(&self) -> Option<&Error> {
+    fn cause(&self) -> Option<&dyn Error> {
         None
     }
 }

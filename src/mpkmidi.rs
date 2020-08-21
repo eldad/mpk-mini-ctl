@@ -114,12 +114,12 @@ impl MpkMidiMessage {
     }
 
     pub fn parse_msg(bytes: &[u8]) -> Result<Self, ParseError> {
-        if bytes.len() == 0 {
-            return Err(ParseError::new(&format!("ERROR: received message with length 0")));
+        if bytes.is_empty() {
+            return Err(ParseError::new("ERROR: received empty message"));
         }
 
         if bytes[0] < 127 {
-            return Err(ParseError::new(&format!("ERROR: received message with MSB unset (<127)")));
+            return Err(ParseError::new("ERROR: received message with MSB unset (<127)"));
         }
 
         if bytes[0] & 0xf0 != 0xf0 {
