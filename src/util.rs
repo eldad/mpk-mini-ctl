@@ -39,7 +39,7 @@ macro_rules! check_bank_value {
 
 macro_rules! append_array {
     ($vec:expr, $arr:expr) => {
-        $vec.append(&mut $arr.into_iter().map(|&x| x).collect());
+        $vec.append(&mut $arr.iter().map(|&x| x).collect());
     };
 }
 
