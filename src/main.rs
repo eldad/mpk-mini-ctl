@@ -46,7 +46,7 @@ use crate::mpkbank::MpkBankDescriptor;
 use crate::mpkmidi::*;
 use crate::util::*;
 
-fn snoop() -> Result<(), Box<Error>> {
+fn snoop() -> Result<(), Box<dyn Error>> {
     let cb = |_, bytes: &[u8], _: &mut _| {
         debug!("rx bytes: {:?}", bytes);
         match MpkMidiMessage::parse_msg(bytes) {
@@ -59,7 +59,7 @@ fn snoop() -> Result<(), Box<Error>> {
     loop {}
 }
 
-fn passthrough() -> Result<(), Box<Error>> {
+fn passthrough() -> Result<(), Box<dyn Error>> {
     let (tx, rx) = mpsc::channel();
 
     let cb = move |_, bytes: &[u8], _: &mut _| {
@@ -91,7 +91,7 @@ fn passthrough() -> Result<(), Box<Error>> {
     }
 }
 
-fn get_bank_desc(bank: u8) -> Result<MpkBankDescriptor, Box<Error>> {
+fn get_bank_desc(bank: u8) -> Result<MpkBankDescriptor, Box<dyn Error>> {
     check_bank_value!(bank);
 
     let (tx, rx) = mpsc::channel();
@@ -125,7 +125,7 @@ fn get_bank_desc(bank: u8) -> Result<MpkBankDescriptor, Box<Error>> {
     Ok(bank_desc)
 }
 
-fn set_bank_from_desc(bank:u8, bank_desc: MpkBankDescriptor) -> Result<(), Box<Error>> {
+fn set_bank_from_desc(bank:u8, bank_desc: MpkBankDescriptor) -> Result<(), Box<dyn Error>> {
     check_bank_value!(bank);
 
     let mut midi_out = midi_out_connect()?;
@@ -135,32 +135,32 @@ fn set_bank_from_desc(bank:u8, bank_desc: MpkBankDescriptor) -> Result<(), Box<E
     Ok(())
 }
 
-fn show_bank(bank: u8) -> Result<(), Box<Error>> {
+fn show_bank(bank: u8) -> Result<(), Box<dyn Error>> {
     let bank_desc = get_bank_desc(bank)?;
     println!("Bank {}:\n{}", bank, bank_desc);
     Ok(())
 }
 
-fn dump_bank_yaml(bank: u8) -> Result<(), Box<Error>> {
+fn dump_bank_yaml(bank: u8) -> Result<(), Box<dyn Error>> {
     let bank_desc = get_bank_desc(bank)?;
     let serialized = serde_yaml::to_string(&bank_desc).unwrap();
     println!("{}", serialized);
     Ok(())
 }
 
-fn cmd_show_bank(matches: &ArgMatches) -> Result<(), Box<Error>> {
+fn cmd_show_bank(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
     let bank = matches.value_of("bank").unwrap().parse::<u8>()?;
     show_bank(bank)?;
     Ok(())
 }
 
-fn cmd_dump_bank_yaml(matches: &ArgMatches) -> Result<(), Box<Error>> {
+fn cmd_dump_bank_yaml(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
     let bank = matches.value_of("bank").unwrap().parse::<u8>()?;
     dump_bank_yaml(bank)?;
     Ok(())
 }
 
-fn cmd_show(matches: &ArgMatches) -> Result<(), Box<Error>> {
+fn cmd_show(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
     match matches.subcommand_name() {
         Some("bank") => cmd_show_bank(matches.subcommand_matches("bank").unwrap()),
         Some("ram") => show_bank(0),
@@ -168,7 +168,7 @@ fn cmd_show(matches: &ArgMatches) -> Result<(), Box<Error>> {
     }
 }
 
-fn cmd_dump_yaml(matches: &ArgMatches) -> Result<(), Box<Error>> {
+fn cmd_dump_yaml(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
     match matches.subcommand_name() {
         Some("bank") => cmd_dump_bank_yaml(matches.subcommand_matches("bank").unwrap()),
         Some("ram") => dump_bank_yaml(0),
@@ -176,7 +176,7 @@ fn cmd_dump_yaml(matches: &ArgMatches) -> Result<(), Box<Error>> {
     }
 }
 
-fn cmd_read_yaml(matches: &ArgMatches) -> Result<(), Box<Error>> {
+fn cmd_read_yaml(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
     let filename = matches.value_of("filename").unwrap().parse::<String>()?;
     let bank_desc: MpkBankDescriptor = serde_yaml::from_reader(File::open(&filename)?)?;
     println!("{}", bank_desc);
@@ -184,7 +184,7 @@ fn cmd_read_yaml(matches: &ArgMatches) -> Result<(), Box<Error>> {
     Ok(())
 }
 
-fn cmd_send_yaml(matches: &ArgMatches) -> Result<(), Box<Error>> {
+fn cmd_send_yaml(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
     let filename = matches.value_of("filename").unwrap().parse::<String>()?;
     let bank_desc: MpkBankDescriptor = serde_yaml::from_reader(File::open(&filename)?)?;
     let bank = matches.value_of("destination").unwrap().parse::<u8>()?;
@@ -192,7 +192,7 @@ fn cmd_send_yaml(matches: &ArgMatches) -> Result<(), Box<Error>> {
     Ok(())
 }
 
-fn app() -> Result<(), Box<Error>> {
+fn app() -> Result<(), Box<dyn Error>> {
     let matches = App::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
         .author(env!("CARGO_PKG_AUTHORS"))

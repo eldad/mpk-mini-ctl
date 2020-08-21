@@ -45,7 +45,7 @@ macro_rules! append_array {
 
 const DEVICE_NAME: &str = "MPKmini2";
 
-pub fn midi_out_connect() -> Result<MidiOutputConnection, Box<Error>> {
+pub fn midi_out_connect() -> Result<MidiOutputConnection, Box<dyn Error>> {
     let port = MidiOutput::new(env!("CARGO_PKG_NAME"))?;
     let name = env!("CARGO_PKG_NAME");
     let re = Regex::new(&format!("{} [0-9]+:[0-9]", DEVICE_NAME)).unwrap();
@@ -61,7 +61,7 @@ pub fn midi_out_connect() -> Result<MidiOutputConnection, Box<Error>> {
     Err(Box::new(RuntimeError::new(&format!("MIDI Out port '{}' not found.", name))))
 }
 
-pub fn midi_in_connect <F, T: Send> (callback: F, data: T) -> Result<MidiInputConnection<T>, Box<Error>>
+pub fn midi_in_connect <F, T: Send> (callback: F, data: T) -> Result<MidiInputConnection<T>, Box<dyn Error>>
 where
     F: FnMut(u64, &[u8], &mut T) + Send + 'static
 {
