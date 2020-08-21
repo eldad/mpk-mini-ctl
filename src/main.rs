@@ -273,6 +273,6 @@ fn app() -> Result<(), Box<dyn Error>> {
 fn main() {
     match app() {
         Ok(_) => (),
-        Err(err) => error!("Error: {}", err.description())
+        Err(err) => error!("Error: {}", err)
     }
 }
