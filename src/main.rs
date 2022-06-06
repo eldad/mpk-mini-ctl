@@ -24,24 +24,24 @@
  */
 
 use std::error::Error;
-use std::sync::mpsc;
-use std::time::Duration;
 use std::fs::File;
+use std::sync::mpsc;
 use std::thread::sleep;
+use std::time::Duration;
 
 mod error;
 use crate::error::*;
 
-use log::{debug, info, error, warn, log};
+use log::{debug, error, info, log, warn};
 
 #[macro_use]
 mod util;
 
-mod u14;
 mod mpkbank;
 mod mpkmidi;
+mod u14;
 
-use clap::{App, SubCommand, Arg, ArgMatches};
+use clap::{App, Arg, ArgMatches, SubCommand};
 
 use crate::mpkbank::MpkBankDescriptor;
 use crate::mpkmidi::*;
@@ -79,14 +79,16 @@ fn passthrough() -> Result<(), Box<dyn Error>> {
     let mut midi_out = midi_out_connect()?;
     let _midi_in = midi_in_connect(cb, ())?;
 
-    info!("Passthrough started: MIDI messages from input will be sent to output. Use CTRL-C to stop.");
+    info!(
+        "Passthrough started: MIDI messages from input will be sent to output. Use CTRL-C to stop."
+    );
     loop {
         match rx.recv() {
             Ok(m) => {
                 if let Err(e) = midi_out.send(m.as_slice()) {
                     error!("Error while forwarding: {}", e);
                 }
-            },
+            }
             Err(e) => {
                 error!("Error while receiving: {}", e);
             }
@@ -128,7 +130,7 @@ fn get_bank_desc(bank: u8) -> Result<MpkBankDescriptor, Box<dyn Error>> {
     Ok(bank_desc)
 }
 
-fn set_bank_from_desc(bank:u8, bank_desc: MpkBankDescriptor) -> Result<(), Box<dyn Error>> {
+fn set_bank_from_desc(bank: u8, bank_desc: MpkBankDescriptor) -> Result<(), Box<dyn Error>> {
     check_bank_value!(bank);
 
     let mut midi_out = midi_out_connect()?;
@@ -167,7 +169,9 @@ fn cmd_show(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
     match matches.subcommand_name() {
         Some("bank") => cmd_show_bank(matches.subcommand_matches("bank").unwrap()),
         Some("ram") => show_bank(0),
-        _ => Err(Box::new(RuntimeError::new("please provide a valid command."))),
+        _ => Err(Box::new(RuntimeError::new(
+            "please provide a valid command.",
+        ))),
     }
 }
 
@@ -175,7 +179,9 @@ fn cmd_dump_yaml(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
     match matches.subcommand_name() {
         Some("bank") => cmd_dump_bank_yaml(matches.subcommand_matches("bank").unwrap()),
         Some("ram") => dump_bank_yaml(0),
-        _ => Err(Box::new(RuntimeError::new("please provide a valid command."))),
+        _ => Err(Box::new(RuntimeError::new(
+            "please provide a valid command.",
+        ))),
     }
 }
 
@@ -200,59 +206,57 @@ fn app() -> Result<(), Box<dyn Error>> {
         .version(env!("CARGO_PKG_VERSION"))
         .author(env!("CARGO_PKG_AUTHORS"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
-        .subcommand(SubCommand::with_name("show")
-            .about("Show commands")
-            .subcommand(SubCommand::with_name("bank")
-                .about("Show bank settings")
-                .arg(Arg::with_name("bank")
-                    .index(1)
-                    .required(true)
+        .subcommand(
+            SubCommand::with_name("show")
+                .about("Show commands")
+                .subcommand(
+                    SubCommand::with_name("bank")
+                        .about("Show bank settings")
+                        .arg(Arg::with_name("bank").index(1).required(true)),
                 )
-            )
-            .subcommand(SubCommand::with_name("ram")
-                .about("Show current active settings (RAM)"))
+                .subcommand(
+                    SubCommand::with_name("ram").about("Show current active settings (RAM)"),
+                ),
         )
-        .subcommand(SubCommand::with_name("dump")
-            .about("Dump settings")
-            .subcommand(SubCommand::with_name("bank")
-                .about("Dump bank settings as yaml")
-                .arg(Arg::with_name("bank")
-                    .index(1)
-                    .required(true)
+        .subcommand(
+            SubCommand::with_name("dump")
+                .about("Dump settings")
+                .subcommand(
+                    SubCommand::with_name("bank")
+                        .about("Dump bank settings as yaml")
+                        .arg(Arg::with_name("bank").index(1).required(true)),
                 )
-            )
-            .subcommand(SubCommand::with_name("ram")
-                .about("Dump current active settings (RAM) as yaml"))
+                .subcommand(
+                    SubCommand::with_name("ram")
+                        .about("Dump current active settings (RAM) as yaml"),
+                ),
         )
-        .subcommand(SubCommand::with_name("snoop")
-            .about("Snoop MIDI messages")
+        .subcommand(SubCommand::with_name("snoop").about("Snoop MIDI messages"))
+        .subcommand(
+            SubCommand::with_name("passthrough")
+                .about("Passthrough (while snooping) MIDI messages"),
         )
-        .subcommand(SubCommand::with_name("passthrough")
-            .about("Passthrough (while snooping) MIDI messages")
+        .subcommand(
+            SubCommand::with_name("read")
+                .about("Read yaml bank descriptor from file and display it")
+                .arg(Arg::with_name("filename").index(1).required(true)),
         )
-        .subcommand(SubCommand::with_name("read")
-            .about("Read yaml bank descriptor from file and display it")
-            .arg(Arg::with_name("filename")
-                .index(1)
-                .required(true)
-            )
+        .subcommand(
+            SubCommand::with_name("send")
+                .about("Read yaml bank descriptor from file and send it to the device")
+                .arg(Arg::with_name("filename").index(1).required(true))
+                .arg(
+                    Arg::with_name("destination")
+                        .index(2)
+                        .required(true)
+                        .help("0 for RAM, 1-4 for banks"),
+                ),
         )
-        .subcommand(SubCommand::with_name("send")
-            .about("Read yaml bank descriptor from file and send it to the device")
-            .arg(Arg::with_name("filename")
-                .index(1)
-                .required(true)
-            )
-            .arg(Arg::with_name("destination")
-                .index(2)
-                .required(true)
-                .help("0 for RAM, 1-4 for banks")
-            )
-        )
-        .arg(Arg::with_name("debug")
-            .required(false)
-            .long("debug")
-            .help("Prints debugging information")
+        .arg(
+            Arg::with_name("debug")
+                .required(false)
+                .long("debug")
+                .help("Prints debugging information"),
         )
         .get_matches();
 
@@ -260,7 +264,11 @@ fn app() -> Result<(), Box<dyn Error>> {
         false => simplelog::LevelFilter::Info,
         true => simplelog::LevelFilter::Debug,
     };
-    simplelog::CombinedLogger::init(vec!(simplelog::TermLogger::new(log_level, simplelog::Config::default()).unwrap()))?;
+    simplelog::CombinedLogger::init(vec![simplelog::TermLogger::new(
+        log_level,
+        simplelog::Config::default(),
+    )
+    .unwrap()])?;
 
     match matches.subcommand_name() {
         Some("show") => cmd_show(matches.subcommand_matches("show").unwrap()),
@@ -269,13 +277,15 @@ fn app() -> Result<(), Box<dyn Error>> {
         Some("passthrough") => passthrough(),
         Some("read") => cmd_read_yaml(matches.subcommand_matches("read").unwrap()),
         Some("send") => cmd_send_yaml(matches.subcommand_matches("send").unwrap()),
-        _ => Err(Box::new(RuntimeError::new("please provide a valid command (use 'help' for information)"))),
+        _ => Err(Box::new(RuntimeError::new(
+            "please provide a valid command (use 'help' for information)",
+        ))),
     }
 }
 
 fn main() {
     match app() {
         Ok(_) => (),
-        Err(err) => error!("Error: {}", err)
+        Err(err) => error!("Error: {}", err),
     }
 }

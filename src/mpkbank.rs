@@ -23,15 +23,15 @@
  *
  */
 
-use std::fmt;
-use crate::u14::U14BE;
 use crate::error::ParseError;
+use crate::u14::U14BE;
+use std::fmt;
 
-use serde::{Serialize, Serializer, Deserialize, Deserializer};
-use serde::de::{Visitor, Unexpected};
 use serde::de;
+use serde::de::{Unexpected, Visitor};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use serde_derive::{Serialize, Deserialize};
+use serde_derive::{Deserialize, Serialize};
 
 // Note
 #[derive(Copy, Clone, Default)]
@@ -41,9 +41,10 @@ pub struct Note {
 
 impl Serialize for Note {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
-        serializer.serialize_str(&format!("{}",self))
+        serializer.serialize_str(&format!("{}", self))
     }
 }
 
@@ -55,8 +56,9 @@ impl<'de> Visitor<'de> for NoteVisitor {
         formatter.write_str("note and octave string separated by space (e.g., `B# 4`)")
     }
 
-    fn visit_str<E>(self, value: &str) -> Result <Note, E>
-        where E: de::Error
+    fn visit_str<E>(self, value: &str) -> Result<Note, E>
+    where
+        E: de::Error,
     {
         match Note::from_str(value) {
             Ok(n) => Ok(n),
@@ -67,7 +69,8 @@ impl<'de> Visitor<'de> for NoteVisitor {
 
 impl<'de> Deserialize<'de> for Note {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where D: Deserializer<'de>
+    where
+        D: Deserializer<'de>,
     {
         Ok(deserializer.deserialize_str(NoteVisitor)?)
     }
@@ -77,25 +80,45 @@ impl Note {
     fn from_str(s: &str) -> Result<Self, ParseError> {
         let note_octave: Vec<&str> = s.split(' ').collect();
         if note_octave.len() != 2 {
-            return Err(ParseError::new(&format!("cannot parse note string {} (expected string with exactly one space)", s)));
+            return Err(ParseError::new(&format!(
+                "cannot parse note string {} (expected string with exactly one space)",
+                s
+            )));
         }
         let note = match note_octave[0] {
-            "C"     => 0,
-            "C#/Db" => 1, "C#" => 1, "Db" => 1,
-            "D"     => 2,
-            "D#/Eb" => 3, "D#" => 3, "Eb" => 3,
-            "E"     => 4,
-            "F"     => 5,
-            "F#/Gb" => 6, "F#" => 6, "Gb" => 6,
-            "G"     => 7,
-            "G#/Ab" => 8, "G#" => 8, "Ab" => 8,
-            "A"     => 9,
-            "A#/Bb" => 10, "A#" => 10, "Bb" => 10,
-            "B"     => 11,
-            _ => return Err(ParseError::new(&format!("cannot parse note {} from {}", note_octave[0], s))),
+            "C" => 0,
+            "C#/Db" => 1,
+            "C#" => 1,
+            "Db" => 1,
+            "D" => 2,
+            "D#/Eb" => 3,
+            "D#" => 3,
+            "Eb" => 3,
+            "E" => 4,
+            "F" => 5,
+            "F#/Gb" => 6,
+            "F#" => 6,
+            "Gb" => 6,
+            "G" => 7,
+            "G#/Ab" => 8,
+            "G#" => 8,
+            "Ab" => 8,
+            "A" => 9,
+            "A#/Bb" => 10,
+            "A#" => 10,
+            "Bb" => 10,
+            "B" => 11,
+            _ => {
+                return Err(ParseError::new(&format!(
+                    "cannot parse note {} from {}",
+                    note_octave[0], s
+                )))
+            }
         };
         let octave: i8 = note_octave[1].parse::<i8>().unwrap(); // TODO: wrap
-        Ok(Note { value: ((octave + 1) * 12) as u8 + note })
+        Ok(Note {
+            value: ((octave + 1) * 12) as u8 + note,
+        })
     }
 
     pub fn as_str(&self) -> String {
@@ -151,7 +174,10 @@ impl Toggle {
         match value {
             0 => Ok(Toggle::Off),
             1 => Ok(Toggle::On),
-            _ => Err(ParseError::new(&format!("Unknown value for toggle {}", value))),
+            _ => Err(ParseError::new(&format!(
+                "Unknown value for toggle {}",
+                value
+            ))),
         }
     }
 }
@@ -166,7 +192,11 @@ struct Knob {
 
 impl fmt::Debug for Knob {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Control: {:3}, Min: {:3}, Max: {:3}", self.control, self.min, self.max)
+        write!(
+            f,
+            "Control: {:3}, Min: {:3}, Max: {:3}",
+            self.control, self.min, self.max
+        )
     }
 }
 
@@ -218,7 +248,11 @@ struct Pad {
 
 impl fmt::Debug for Pad {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Note: {:13}, Control: {:3}, Program: {:3}, Mode: {:?}", self.note, self.control, self.program, self.mode)
+        write!(
+            f,
+            "Note: {:13}, Control: {:3}, Program: {:3}, Mode: {:?}",
+            self.note, self.control, self.program, self.mode
+        )
     }
 }
 
@@ -249,7 +283,10 @@ impl ClockSource {
         match value {
             0 => Ok(ClockSource::Internal),
             1 => Ok(ClockSource::External),
-            _ => Err(ParseError::new(&format!("Unknown clock source value {}", value))),
+            _ => Err(ParseError::new(&format!(
+                "Unknown clock source value {}",
+                value
+            ))),
         }
     }
 }
@@ -278,7 +315,10 @@ impl ArpeggiatorTimeDivision {
             5 => Ok(ArpeggiatorTimeDivision::_16T),
             6 => Ok(ArpeggiatorTimeDivision::_32),
             7 => Ok(ArpeggiatorTimeDivision::_32T),
-            _ => Err(ParseError::new(&format!("Invalid arpeggiator time division {}", value))),
+            _ => Err(ParseError::new(&format!(
+                "Invalid arpeggiator time division {}",
+                value
+            ))),
         }
     }
 }
@@ -310,7 +350,10 @@ impl ArpeggiatorMode {
             3 => Ok(ArpeggiatorMode::Inclusive),
             4 => Ok(ArpeggiatorMode::Order),
             5 => Ok(ArpeggiatorMode::Random),
-            _ => Err(ParseError::new(&format!("Invalid arpeggiator mode {}", value))),
+            _ => Err(ParseError::new(&format!(
+                "Invalid arpeggiator mode {}",
+                value
+            ))),
         }
     }
 }
@@ -361,15 +404,18 @@ impl Joystick {
             0 => Ok(Joystick::Pitchbend),
             1 => Ok(Joystick::ControlChannel(bytes[1])),
             2 => Ok(Joystick::SplitControlChannels(bytes[1], bytes[2])),
-            _ => Err(ParseError::new(&format!("Invalid joystick mode {}", bytes[1]))),
+            _ => Err(ParseError::new(&format!(
+                "Invalid joystick mode {}",
+                bytes[1]
+            ))),
         }
     }
 
     fn to_bytes(&self) -> [u8; 3] {
         match *self {
             Joystick::Pitchbend => [0; 3],
-            Joystick::ControlChannel(c) => { [1, c, 0] },
-            Joystick::SplitControlChannels(c1, c2) => { [2, c1, c2 ]}
+            Joystick::ControlChannel(c) => [1, c, 0],
+            Joystick::SplitControlChannels(c1, c2) => [2, c1, c2],
         }
     }
 }
@@ -409,9 +455,15 @@ impl fmt::Display for MpkBankDescriptor {
         sb.push_str(&format!("Transpose: {}\n", self.transpose as i8 - 12));
         sb.push_str(&format!("Arpeggiator: {:?}\n", self.arpeggiator));
         sb.push_str(&format!("Arpeggiator Mode: {:?}\n", self.arpeggiator_mode));
-        sb.push_str(&format!("Arpeggiator Time Division: {}\n", self.arpeggiator_time_division));
+        sb.push_str(&format!(
+            "Arpeggiator Time Division: {}\n",
+            self.arpeggiator_time_division
+        ));
         sb.push_str(&format!("Arpeggiator Tempo: {}\n", self.tempo));
-        sb.push_str(&format!("Arpeggiator Octave: {}\n", self.arpeggiator_octave + 1));
+        sb.push_str(&format!(
+            "Arpeggiator Octave: {}\n",
+            self.arpeggiator_octave + 1
+        ));
         sb.push_str(&format!("Swing: {}\n", self.swing));
         sb.push_str(&format!("Clock source: {:?}\n", self.clock_source));
         sb.push_str(&format!("Latch: {:?}\n", self.latch));
@@ -441,7 +493,11 @@ impl fmt::Debug for MpkBankDescriptor {
 impl MpkBankDescriptor {
     fn parse_knobs(bytes: &[u8]) -> Result<[Knob; 8], ParseError> {
         if bytes.len() != 8 * 3 {
-            Err(ParseError::new(&format!("trying to parse knobs with unexpected length {} (expected {})", bytes.len(), 8 * 3)))
+            Err(ParseError::new(&format!(
+                "trying to parse knobs with unexpected length {} (expected {})",
+                bytes.len(),
+                8 * 3
+            )))
         } else {
             let mut knobs: [Knob; 8] = [Knob::default(); 8];
             for i in 0..8 {
@@ -453,11 +509,20 @@ impl MpkBankDescriptor {
 
     fn parse_pads(bytes: &[u8]) -> Result<[Pad; 16], ParseError> {
         if bytes.len() != 16 * 4 {
-            Err(ParseError::new(&format!("trying to parse pads with unexpected length {} (expected {})", bytes.len(), 16 * 4)))
+            Err(ParseError::new(&format!(
+                "trying to parse pads with unexpected length {} (expected {})",
+                bytes.len(),
+                16 * 4
+            )))
         } else {
             let mut pads: [Pad; 16] = [Pad::default(); 16];
             for i in 0..16 {
-                pads[i] = Pad::from([bytes[i * 4], bytes[i * 4 + 1], bytes[i * 4 + 2], bytes[i * 4 + 3]])?;
+                pads[i] = Pad::from([
+                    bytes[i * 4],
+                    bytes[i * 4 + 1],
+                    bytes[i * 4 + 2],
+                    bytes[i * 4 + 3],
+                ])?;
             }
             Ok(pads)
         }
@@ -465,7 +530,11 @@ impl MpkBankDescriptor {
 
     pub fn from(bytes: &[u8]) -> Result<Self, ParseError> {
         if bytes.len() != MPK_BANK_DESCRIPTOR_LENGTH {
-            Err(ParseError::new(&format!("Unexpected length for bank descriptor ({}, expected {})", bytes.len(), MPK_BANK_DESCRIPTOR_LENGTH)))
+            Err(ParseError::new(&format!(
+                "Unexpected length for bank descriptor ({}, expected {})",
+                bytes.len(),
+                MPK_BANK_DESCRIPTOR_LENGTH
+            )))
         } else {
             Ok(MpkBankDescriptor {
                 pad_midi_channel: bytes[0],
@@ -490,7 +559,7 @@ impl MpkBankDescriptor {
     }
 
     pub fn into_bytes(self) -> Vec<u8> {
-        let mut ret: Vec<u8> = vec!(
+        let mut ret: Vec<u8> = vec![
             self.pad_midi_channel,
             self.keybed_channel,
             self.octave,
@@ -501,7 +570,7 @@ impl MpkBankDescriptor {
             self.latch as u8,
             self.swing as u8,
             self.tempo_taps,
-        );
+        ];
         append_array!(ret, self.tempo.to_device().unwrap());
         ret.push(self.arpeggiator_octave);
         append_array!(ret, self.joystick_x.to_bytes());

@@ -23,8 +23,8 @@
  *
  */
 
-use crate::mpkbank::MpkBankDescriptor;
 use crate::error::ParseError;
+use crate::mpkbank::MpkBankDescriptor;
 
 // https://www.midi.org/specifications/item/table-1-summary-of-midi-message
 const MIDI_SYSEX: u8 = 0xf0;
@@ -44,11 +44,21 @@ const MIDI_PITCH_BEND: u8 = 0xe0;
 // MPK-Specific
 const SYSEX_MPK_BANK: [u8; 5] = [0x00, 0x26, 0x67, 0x00, 0x6d];
 pub fn sysex_get_bank(bank: u8) -> Vec<u8> {
-    vec!(MIDI_SYSEX, SYSEX_AKAI, 0x00, 0x26, 0x66, 0x00, 0x01, bank, MIDI_SYSEX_END)
+    vec![
+        MIDI_SYSEX,
+        SYSEX_AKAI,
+        0x00,
+        0x26,
+        0x66,
+        0x00,
+        0x01,
+        bank,
+        MIDI_SYSEX_END,
+    ]
 }
 
 pub fn sysex_set_bank(bank: u8, bank_desc: MpkBankDescriptor) -> Vec<u8> {
-    let mut ret = vec!(MIDI_SYSEX, SYSEX_AKAI, 0x00, 0x26, 0x64, 0x00, 0x6d, bank);
+    let mut ret = vec![MIDI_SYSEX, SYSEX_AKAI, 0x00, 0x26, 0x64, 0x00, 0x6d, bank];
     append_array!(ret, &bank_desc.into_bytes());
     ret.push(MIDI_SYSEX_END);
     ret
@@ -82,20 +92,35 @@ pub enum MpkMidiMessage {
 impl MpkMidiMessage {
     fn parse_sysex(bytes: &[u8]) -> Result<Self, ParseError> {
         if bytes.len() < 3 {
-            return Err(ParseError::new(&format!("SysEx rx error: runt: {:?}", bytes)));
+            return Err(ParseError::new(&format!(
+                "SysEx rx error: runt: {:?}",
+                bytes
+            )));
         }
         if *bytes.last().unwrap() != MIDI_SYSEX_END {
-            return Err(ParseError::new(&format!("SysEx rx error: malformed: {:?}", bytes)));
+            return Err(ParseError::new(&format!(
+                "SysEx rx error: malformed: {:?}",
+                bytes
+            )));
         }
         if bytes[1] != SYSEX_AKAI {
-            return Err(ParseError::new(&format!("SysEx rx error: non-AKAI: (manufacturer={:x}, expected={:x}) {:?}", bytes[1], SYSEX_AKAI, bytes)));
+            return Err(ParseError::new(&format!(
+                "SysEx rx error: non-AKAI: (manufacturer={:x}, expected={:x}) {:?}",
+                bytes[1], SYSEX_AKAI, bytes
+            )));
         }
 
-        let payload = &bytes[2..bytes.len()-1];
+        let payload = &bytes[2..bytes.len() - 1];
         if payload.starts_with(&SYSEX_MPK_BANK) {
-            Ok(MpkMidiMessage::Bank(payload[SYSEX_MPK_BANK.len()], MpkBankDescriptor::from(&payload[SYSEX_MPK_BANK.len()+1..])? ))
+            Ok(MpkMidiMessage::Bank(
+                payload[SYSEX_MPK_BANK.len()],
+                MpkBankDescriptor::from(&payload[SYSEX_MPK_BANK.len() + 1..])?,
+            ))
         } else {
-            Err(ParseError::new(&format!("WARNING: unknown AKAI sysex message {:?}", payload)))
+            Err(ParseError::new(&format!(
+                "WARNING: unknown AKAI sysex message {:?}",
+                payload
+            )))
         }
     }
 
@@ -119,7 +144,9 @@ impl MpkMidiMessage {
         }
 
         if bytes[0] < 127 {
-            return Err(ParseError::new("ERROR: received message with MSB unset (<127)"));
+            return Err(ParseError::new(
+                "ERROR: received message with MSB unset (<127)",
+            ));
         }
 
         if bytes[0] & 0xf0 != 0xf0 {

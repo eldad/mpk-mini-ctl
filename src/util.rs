@@ -23,16 +23,18 @@
  *
  */
 
-use std::error::Error;
 use crate::error::RuntimeError;
+use std::error::Error;
 
-use midir::{MidiInput, MidiOutput, MidiOutputConnection, MidiInputConnection, Ignore};
+use midir::{Ignore, MidiInput, MidiInputConnection, MidiOutput, MidiOutputConnection};
 use regex::Regex;
 
 macro_rules! check_bank_value {
     ($bank:expr) => {
         if $bank > 4 {
-            return Err(Box::new(RuntimeError::new("Bank value must be between 0 and 4 (0 = RAM)")))
+            return Err(Box::new(RuntimeError::new(
+                "Bank value must be between 0 and 4 (0 = RAM)",
+            )));
         }
     };
 }
@@ -55,15 +57,21 @@ pub fn midi_out_connect() -> Result<MidiOutputConnection, Box<dyn Error>> {
             return match port.connect(i, name) {
                 Ok(ret) => Ok(ret),
                 Err(e) => Err(Box::new(e)),
-            }
+            };
         }
     }
-    Err(Box::new(RuntimeError::new(&format!("MIDI Out port '{}' not found.", name))))
+    Err(Box::new(RuntimeError::new(&format!(
+        "MIDI Out port '{}' not found.",
+        name
+    ))))
 }
 
-pub fn midi_in_connect <F, T: Send> (callback: F, data: T) -> Result<MidiInputConnection<T>, Box<dyn Error>>
+pub fn midi_in_connect<F, T: Send>(
+    callback: F,
+    data: T,
+) -> Result<MidiInputConnection<T>, Box<dyn Error>>
 where
-    F: FnMut(u64, &[u8], &mut T) + Send + 'static
+    F: FnMut(u64, &[u8], &mut T) + Send + 'static,
 {
     let mut port = MidiInput::new(env!("CARGO_PKG_NAME"))?;
     port.ignore(Ignore::None);
@@ -75,8 +83,11 @@ where
             return match port.connect(i, name, callback, data) {
                 Ok(ret) => Ok(ret),
                 Err(e) => Err(Box::new(e)),
-            }
+            };
         }
     }
-    Err(Box::new(RuntimeError::new(&format!("MIDI In port '{}' not found.", name))))
+    Err(Box::new(RuntimeError::new(&format!(
+        "MIDI In port '{}' not found.",
+        name
+    ))))
 }
