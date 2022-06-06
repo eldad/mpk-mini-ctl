@@ -59,7 +59,6 @@ impl fmt::Display for RuntimeError {
 
 /* Parse Error */
 
-
 #[derive(Debug)]
 pub struct ParseError {
     reason: String,
