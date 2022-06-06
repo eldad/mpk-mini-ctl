@@ -67,7 +67,7 @@ fn passthrough() -> Result<(), Box<dyn Error>> {
 
     let cb = move |_, bytes: &[u8], _: &mut _| {
         debug!("rx bytes: {:?}", bytes);
-        match MpkMidiMessage::parse_msg(&bytes) {
+        match MpkMidiMessage::parse_msg(bytes) {
             Ok(m) => println!("{:?}", m),
             Err(e) => warn!("Unparsed: {}; bytes: {:?}", e, bytes),
         }

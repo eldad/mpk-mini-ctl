@@ -72,7 +72,7 @@ impl<'de> Deserialize<'de> for Note {
     where
         D: Deserializer<'de>,
     {
-        Ok(deserializer.deserialize_str(NoteVisitor)?)
+        deserializer.deserialize_str(NoteVisitor)
     }
 }
 
@@ -209,7 +209,7 @@ impl Knob {
         }
     }
 
-    fn to_bytes(&self) -> [u8; 3] {
+    fn to_bytes(self) -> [u8; 3] {
         [self.control, self.min, self.max]
     }
 }
@@ -266,7 +266,7 @@ impl Pad {
         })
     }
 
-    fn to_bytes(&self) -> [u8; 4] {
+    fn to_bytes(self) -> [u8; 4] {
         [self.note.value, self.control, self.program, self.mode as u8]
     }
 }
