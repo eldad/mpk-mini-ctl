@@ -25,6 +25,8 @@ jobs:
     name: Test Suite
     runs-on: ubuntu-latest
     steps:
+      - name: alsa-dev
+        run: sudo apt-get update && sudo apt-get install libasound2-dev
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -39,6 +41,8 @@ jobs:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
+      - name: alsa-dev
+        run: sudo apt-get update && sudo apt-get install libasound2-dev
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -55,6 +59,8 @@ jobs:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
+      - name: alsa-dev
+        run: sudo apt-get update && sudo apt-get install libasound2-dev
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
