@@ -8,7 +8,7 @@ edition = "2018"
 [dependencies]
 midir = "0.5.0"
 clap = "2.29.4"
-regex = "0.2"
+regex = "1.5.6"
 serde = "1.0.27"
 serde_derive = "1.0.27"
 serde_yaml = "0.7.3"
