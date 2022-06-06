@@ -6,7 +6,7 @@ description = "AKAI MPK Mini mkII Control Tool"
 edition = "2021"
 
 [dependencies]
-midir = "0.5.0"
+midir = "0.8.0"
 clap = "2.29.4"
 regex = "1.5.6"
 serde = "1.0.137"

@@ -48,13 +48,13 @@ macro_rules! append_array {
 const DEVICE_NAME: &str = "MPKmini2";
 
 pub fn midi_out_connect() -> Result<MidiOutputConnection, Box<dyn Error>> {
-    let port = MidiOutput::new(env!("CARGO_PKG_NAME"))?;
+    let midi_output = MidiOutput::new(env!("CARGO_PKG_NAME"))?;
     let name = env!("CARGO_PKG_NAME");
     let re = Regex::new(&format!("{} [0-9]+:[0-9]", DEVICE_NAME)).unwrap();
-    for i in 0..port.port_count() {
-        let port_name = port.port_name(i)?;
+    for port in midi_output.ports() {
+        let port_name = midi_output.port_name(&port)?;
         if re.is_match(port_name.as_str()) {
-            return match port.connect(i, name) {
+            return match midi_output.connect(&port, name) {
                 Ok(ret) => Ok(ret),
                 Err(e) => Err(Box::new(e)),
             };
@@ -73,14 +73,14 @@ pub fn midi_in_connect<F, T: Send>(
 where
     F: FnMut(u64, &[u8], &mut T) + Send + 'static,
 {
-    let mut port = MidiInput::new(env!("CARGO_PKG_NAME"))?;
-    port.ignore(Ignore::None);
+    let mut midi_input = MidiInput::new(env!("CARGO_PKG_NAME"))?;
+    midi_input.ignore(Ignore::None);
     let name = env!("CARGO_PKG_NAME");
     let re = Regex::new(&format!("{} [0-9]+:[0-9]", DEVICE_NAME)).unwrap();
-    for i in 0..port.port_count() {
-        let port_name = port.port_name(i)?;
+    for port in midi_input.ports() {
+        let port_name = midi_input.port_name(&port)?;
         if re.is_match(port_name.as_str()) {
-            return match port.connect(i, name, callback, data) {
+            return match midi_input.connect(&port, name, callback, data) {
                 Ok(ret) => Ok(ret),
                 Err(e) => Err(Box::new(e)),
             };
