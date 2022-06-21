@@ -32,7 +32,7 @@ use std::time::Duration;
 mod error;
 use crate::error::*;
 
-use log::{debug, error, info, log, warn};
+use log::{debug, error, info, warn};
 
 #[macro_use]
 mod util;
