@@ -1,3 +1,3 @@
 # mpk-mini-ctl
 
-Pure rust command line tool for the mpk mini.
+Rust command line tool for the mpk mini.
