@@ -267,8 +267,9 @@ fn app() -> Result<(), Box<dyn Error>> {
     simplelog::CombinedLogger::init(vec![simplelog::TermLogger::new(
         log_level,
         simplelog::Config::default(),
-    )
-    .unwrap()])?;
+        simplelog::TerminalMode::Stderr,
+        simplelog::ColorChoice::Auto,
+    )])?;
 
     match matches.subcommand_name() {
         Some("show") => cmd_show(matches.subcommand_matches("show").unwrap()),
