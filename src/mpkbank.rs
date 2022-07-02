@@ -433,38 +433,31 @@ pub struct MpkBankDescriptor {
 
 impl fmt::Display for MpkBankDescriptor {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut sb = String::new();
-        sb.push_str(&format!("PAD Channel: {}\n", self.pad_midi_channel + 1));
-        sb.push_str(&format!("Keybed Channel: {}\n", self.keybed_channel + 1));
-        sb.push_str(&format!("Octave: {}\n", self.octave as i8 - 4));
-        sb.push_str(&format!("Transpose: {}\n", self.transpose as i8 - 12));
-        sb.push_str(&format!("Arpeggiator: {:?}\n", self.arpeggiator));
-        sb.push_str(&format!("Arpeggiator Mode: {:?}\n", self.arpeggiator_mode));
-        sb.push_str(&format!(
-            "Arpeggiator Time Division: {}\n",
-            self.arpeggiator_time_division
-        ));
-        sb.push_str(&format!("Arpeggiator Tempo: {}\n", self.tempo));
-        sb.push_str(&format!(
-            "Arpeggiator Octave: {}\n",
-            self.arpeggiator_octave + 1
-        ));
-        sb.push_str(&format!("Swing: {}\n", self.swing));
-        sb.push_str(&format!("Clock source: {:?}\n", self.clock_source));
-        sb.push_str(&format!("Latch: {:?}\n", self.latch));
-        sb.push_str(&format!("Tempo taps: {}\n", self.tempo_taps));
-        sb.push_str(&format!("Joystick X: {:?}\n", self.joystick_x));
-        sb.push_str(&format!("Joystick Y: {:?}\n", self.joystick_y));
+        writeln!(f, "PAD Channel: {}", self.pad_midi_channel + 1)?;
+        writeln!(f, "Keybed Channel: {}", self.keybed_channel + 1)?;
+        writeln!(f, "Octave: {}", self.octave as i8 - 4)?;
+        writeln!(f, "Transpose: {}", self.transpose as i8 - 12)?;
+        writeln!(f, "Arpeggiator: {:?}", self.arpeggiator)?;
+        writeln!(f, "Arpeggiator Mode: {:?}", self.arpeggiator_mode)?;
+        writeln!(f, "Arpeggiator Time Division: {}", self.arpeggiator_time_division)?;
+        writeln!(f, "Arpeggiator Tempo: {}", self.tempo)?;
+        writeln!(f, "Arpeggiator Octave: {}", self.arpeggiator_octave + 1)?;
+        writeln!(f, "Swing: {}", self.swing)?;
+        writeln!(f, "Clock source: {:?}", self.clock_source)?;
+        writeln!(f, "Latch: {:?}", self.latch)?;
+        writeln!(f, "Tempo taps: {}", self.tempo_taps)?;
+        writeln!(f, "Joystick X: {:?}", self.joystick_x)?;
+        writeln!(f, "Joystick Y: {:?}", self.joystick_y)?;
 
         for (i, knob) in self.knobs.iter().enumerate() {
-            sb.push_str(&format!("Knob {}: {:?}\n", i + 1, knob));
+            writeln!(f, "Knob {}: {:?}", i + 1, knob)?;
         }
 
         for (i, pad) in self.pads.iter().enumerate() {
             let padbank = if i < 8 { "A" } else { "B" };
-            sb.push_str(&format!("Pad {}{}: {:?}\n", padbank, i % 8 + 1, pad));
+            writeln!(f, "Pad {}{}: {:?}", padbank, i % 8 + 1, pad)?;
         }
-        write!(f, "{}", sb)
+        Ok(())
     }
 }
 
