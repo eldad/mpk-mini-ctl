@@ -174,10 +174,7 @@ impl Toggle {
         match value {
             0 => Ok(Toggle::Off),
             1 => Ok(Toggle::On),
-            _ => Err(ParseError::new(&format!(
-                "Unknown value for toggle {}",
-                value
-            ))),
+            _ => Err(ParseError::new(&format!("Unknown value for toggle {}", value))),
         }
     }
 }
@@ -283,10 +280,7 @@ impl ClockSource {
         match value {
             0 => Ok(ClockSource::Internal),
             1 => Ok(ClockSource::External),
-            _ => Err(ParseError::new(&format!(
-                "Unknown clock source value {}",
-                value
-            ))),
+            _ => Err(ParseError::new(&format!("Unknown clock source value {}", value))),
         }
     }
 }
@@ -315,10 +309,7 @@ impl ArpeggiatorTimeDivision {
             5 => Ok(ArpeggiatorTimeDivision::_16T),
             6 => Ok(ArpeggiatorTimeDivision::_32),
             7 => Ok(ArpeggiatorTimeDivision::_32T),
-            _ => Err(ParseError::new(&format!(
-                "Invalid arpeggiator time division {}",
-                value
-            ))),
+            _ => Err(ParseError::new(&format!("Invalid arpeggiator time division {}", value))),
         }
     }
 }
@@ -350,10 +341,7 @@ impl ArpeggiatorMode {
             3 => Ok(ArpeggiatorMode::Inclusive),
             4 => Ok(ArpeggiatorMode::Order),
             5 => Ok(ArpeggiatorMode::Random),
-            _ => Err(ParseError::new(&format!(
-                "Invalid arpeggiator mode {}",
-                value
-            ))),
+            _ => Err(ParseError::new(&format!("Invalid arpeggiator mode {}", value))),
         }
     }
 }
@@ -404,10 +392,7 @@ impl Joystick {
             0 => Ok(Joystick::Pitchbend),
             1 => Ok(Joystick::ControlChannel(bytes[1])),
             2 => Ok(Joystick::SplitControlChannels(bytes[1], bytes[2])),
-            _ => Err(ParseError::new(&format!(
-                "Invalid joystick mode {}",
-                bytes[1]
-            ))),
+            _ => Err(ParseError::new(&format!("Invalid joystick mode {}", bytes[1]))),
         }
     }
 
@@ -517,12 +502,7 @@ impl MpkBankDescriptor {
         } else {
             let mut pads: [Pad; 16] = [Pad::default(); 16];
             for i in 0..16 {
-                pads[i] = Pad::from([
-                    bytes[i * 4],
-                    bytes[i * 4 + 1],
-                    bytes[i * 4 + 2],
-                    bytes[i * 4 + 3],
-                ])?;
+                pads[i] = Pad::from([bytes[i * 4], bytes[i * 4 + 1], bytes[i * 4 + 2], bytes[i * 4 + 3]])?;
             }
             Ok(pads)
         }
