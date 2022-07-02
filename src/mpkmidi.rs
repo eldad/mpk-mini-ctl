@@ -92,16 +92,10 @@ pub enum MpkMidiMessage {
 impl MpkMidiMessage {
     fn parse_sysex(bytes: &[u8]) -> Result<Self, ParseError> {
         if bytes.len() < 3 {
-            return Err(ParseError::new(&format!(
-                "SysEx rx error: runt: {:?}",
-                bytes
-            )));
+            return Err(ParseError::new(&format!("SysEx rx error: runt: {:?}", bytes)));
         }
         if *bytes.last().unwrap() != MIDI_SYSEX_END {
-            return Err(ParseError::new(&format!(
-                "SysEx rx error: malformed: {:?}",
-                bytes
-            )));
+            return Err(ParseError::new(&format!("SysEx rx error: malformed: {:?}", bytes)));
         }
         if bytes[1] != SYSEX_AKAI {
             return Err(ParseError::new(&format!(
@@ -144,9 +138,7 @@ impl MpkMidiMessage {
         }
 
         if bytes[0] < 127 {
-            return Err(ParseError::new(
-                "ERROR: received message with MSB unset (<127)",
-            ));
+            return Err(ParseError::new("ERROR: received message with MSB unset (<127)"));
         }
 
         if bytes[0] & 0xf0 != 0xf0 {

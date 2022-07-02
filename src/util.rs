@@ -66,10 +66,7 @@ pub fn midi_out_connect() -> Result<MidiOutputConnection, Box<dyn Error>> {
     ))))
 }
 
-pub fn midi_in_connect<F, T: Send>(
-    callback: F,
-    data: T,
-) -> Result<MidiInputConnection<T>, Box<dyn Error>>
+pub fn midi_in_connect<F, T: Send>(callback: F, data: T) -> Result<MidiInputConnection<T>, Box<dyn Error>>
 where
     F: FnMut(u64, &[u8], &mut T) + Send + 'static,
 {

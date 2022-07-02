@@ -55,10 +55,7 @@ impl U14BE {
                 self.host
             )))
         } else {
-            Ok([
-                ((self.host & 0x3f80) >> 7) as u8,
-                (self.host & 0x007f) as u8,
-            ])
+            Ok([((self.host & 0x3f80) >> 7) as u8, (self.host & 0x007f) as u8])
         }
     }
 }
