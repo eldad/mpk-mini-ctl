@@ -174,10 +174,7 @@ impl Toggle {
         match value {
             0 => Ok(Toggle::Off),
             1 => Ok(Toggle::On),
-            _ => Err(ParseError::new(&format!(
-                "Unknown value for toggle {}",
-                value
-            ))),
+            _ => Err(ParseError::new(&format!("Unknown value for toggle {}", value))),
         }
     }
 }
@@ -283,10 +280,7 @@ impl ClockSource {
         match value {
             0 => Ok(ClockSource::Internal),
             1 => Ok(ClockSource::External),
-            _ => Err(ParseError::new(&format!(
-                "Unknown clock source value {}",
-                value
-            ))),
+            _ => Err(ParseError::new(&format!("Unknown clock source value {}", value))),
         }
     }
 }
@@ -315,10 +309,7 @@ impl ArpeggiatorTimeDivision {
             5 => Ok(ArpeggiatorTimeDivision::_16T),
             6 => Ok(ArpeggiatorTimeDivision::_32),
             7 => Ok(ArpeggiatorTimeDivision::_32T),
-            _ => Err(ParseError::new(&format!(
-                "Invalid arpeggiator time division {}",
-                value
-            ))),
+            _ => Err(ParseError::new(&format!("Invalid arpeggiator time division {}", value))),
         }
     }
 }
@@ -350,10 +341,7 @@ impl ArpeggiatorMode {
             3 => Ok(ArpeggiatorMode::Inclusive),
             4 => Ok(ArpeggiatorMode::Order),
             5 => Ok(ArpeggiatorMode::Random),
-            _ => Err(ParseError::new(&format!(
-                "Invalid arpeggiator mode {}",
-                value
-            ))),
+            _ => Err(ParseError::new(&format!("Invalid arpeggiator mode {}", value))),
         }
     }
 }
@@ -404,10 +392,7 @@ impl Joystick {
             0 => Ok(Joystick::Pitchbend),
             1 => Ok(Joystick::ControlChannel(bytes[1])),
             2 => Ok(Joystick::SplitControlChannels(bytes[1], bytes[2])),
-            _ => Err(ParseError::new(&format!(
-                "Invalid joystick mode {}",
-                bytes[1]
-            ))),
+            _ => Err(ParseError::new(&format!("Invalid joystick mode {}", bytes[1]))),
         }
     }
 
@@ -448,38 +433,31 @@ pub struct MpkBankDescriptor {
 
 impl fmt::Display for MpkBankDescriptor {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut sb = String::new();
-        sb.push_str(&format!("PAD Channel: {}\n", self.pad_midi_channel + 1));
-        sb.push_str(&format!("Keybed Channel: {}\n", self.keybed_channel + 1));
-        sb.push_str(&format!("Octave: {}\n", self.octave as i8 - 4));
-        sb.push_str(&format!("Transpose: {}\n", self.transpose as i8 - 12));
-        sb.push_str(&format!("Arpeggiator: {:?}\n", self.arpeggiator));
-        sb.push_str(&format!("Arpeggiator Mode: {:?}\n", self.arpeggiator_mode));
-        sb.push_str(&format!(
-            "Arpeggiator Time Division: {}\n",
-            self.arpeggiator_time_division
-        ));
-        sb.push_str(&format!("Arpeggiator Tempo: {}\n", self.tempo));
-        sb.push_str(&format!(
-            "Arpeggiator Octave: {}\n",
-            self.arpeggiator_octave + 1
-        ));
-        sb.push_str(&format!("Swing: {}\n", self.swing));
-        sb.push_str(&format!("Clock source: {:?}\n", self.clock_source));
-        sb.push_str(&format!("Latch: {:?}\n", self.latch));
-        sb.push_str(&format!("Tempo taps: {}\n", self.tempo_taps));
-        sb.push_str(&format!("Joystick X: {:?}\n", self.joystick_x));
-        sb.push_str(&format!("Joystick Y: {:?}\n", self.joystick_y));
+        writeln!(f, "PAD Channel: {}", self.pad_midi_channel + 1)?;
+        writeln!(f, "Keybed Channel: {}", self.keybed_channel + 1)?;
+        writeln!(f, "Octave: {}", self.octave as i8 - 4)?;
+        writeln!(f, "Transpose: {}", self.transpose as i8 - 12)?;
+        writeln!(f, "Arpeggiator: {:?}", self.arpeggiator)?;
+        writeln!(f, "Arpeggiator Mode: {:?}", self.arpeggiator_mode)?;
+        writeln!(f, "Arpeggiator Time Division: {}", self.arpeggiator_time_division)?;
+        writeln!(f, "Arpeggiator Tempo: {}", self.tempo)?;
+        writeln!(f, "Arpeggiator Octave: {}", self.arpeggiator_octave + 1)?;
+        writeln!(f, "Swing: {}", self.swing)?;
+        writeln!(f, "Clock source: {:?}", self.clock_source)?;
+        writeln!(f, "Latch: {:?}", self.latch)?;
+        writeln!(f, "Tempo taps: {}", self.tempo_taps)?;
+        writeln!(f, "Joystick X: {:?}", self.joystick_x)?;
+        writeln!(f, "Joystick Y: {:?}", self.joystick_y)?;
 
         for (i, knob) in self.knobs.iter().enumerate() {
-            sb.push_str(&format!("Knob {}: {:?}\n", i + 1, knob));
+            writeln!(f, "Knob {}: {:?}", i + 1, knob)?;
         }
 
         for (i, pad) in self.pads.iter().enumerate() {
             let padbank = if i < 8 { "A" } else { "B" };
-            sb.push_str(&format!("Pad {}{}: {:?}\n", padbank, i % 8 + 1, pad));
+            writeln!(f, "Pad {}{}: {:?}", padbank, i % 8 + 1, pad)?;
         }
-        write!(f, "{}", sb)
+        Ok(())
     }
 }
 
@@ -517,12 +495,7 @@ impl MpkBankDescriptor {
         } else {
             let mut pads: [Pad; 16] = [Pad::default(); 16];
             for i in 0..16 {
-                pads[i] = Pad::from([
-                    bytes[i * 4],
-                    bytes[i * 4 + 1],
-                    bytes[i * 4 + 2],
-                    bytes[i * 4 + 3],
-                ])?;
+                pads[i] = Pad::from([bytes[i * 4], bytes[i * 4 + 1], bytes[i * 4 + 2], bytes[i * 4 + 3]])?;
             }
             Ok(pads)
         }

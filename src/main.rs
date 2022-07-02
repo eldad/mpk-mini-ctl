@@ -79,9 +79,7 @@ fn passthrough() -> Result<(), Box<dyn Error>> {
     let mut midi_out = midi_out_connect()?;
     let _midi_in = midi_in_connect(cb, ())?;
 
-    info!(
-        "Passthrough started: MIDI messages from input will be sent to output. Use CTRL-C to stop."
-    );
+    info!("Passthrough started: MIDI messages from input will be sent to output. Use CTRL-C to stop.");
     loop {
         match rx.recv() {
             Ok(m) => {
@@ -169,9 +167,7 @@ fn cmd_show(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
     match matches.subcommand_name() {
         Some("bank") => cmd_show_bank(matches.subcommand_matches("bank").unwrap()),
         Some("ram") => show_bank(0),
-        _ => Err(Box::new(RuntimeError::new(
-            "please provide a valid command.",
-        ))),
+        _ => Err(Box::new(RuntimeError::new("please provide a valid command."))),
     }
 }
 
@@ -179,9 +175,7 @@ fn cmd_dump_yaml(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
     match matches.subcommand_name() {
         Some("bank") => cmd_dump_bank_yaml(matches.subcommand_matches("bank").unwrap()),
         Some("ram") => dump_bank_yaml(0),
-        _ => Err(Box::new(RuntimeError::new(
-            "please provide a valid command.",
-        ))),
+        _ => Err(Box::new(RuntimeError::new("please provide a valid command."))),
     }
 }
 
@@ -214,9 +208,7 @@ fn app() -> Result<(), Box<dyn Error>> {
                         .about("Show bank settings")
                         .arg(Arg::with_name("bank").index(1).required(true)),
                 )
-                .subcommand(
-                    SubCommand::with_name("ram").about("Show current active settings (RAM)"),
-                ),
+                .subcommand(SubCommand::with_name("ram").about("Show current active settings (RAM)")),
         )
         .subcommand(
             SubCommand::with_name("dump")
@@ -226,16 +218,10 @@ fn app() -> Result<(), Box<dyn Error>> {
                         .about("Dump bank settings as yaml")
                         .arg(Arg::with_name("bank").index(1).required(true)),
                 )
-                .subcommand(
-                    SubCommand::with_name("ram")
-                        .about("Dump current active settings (RAM) as yaml"),
-                ),
+                .subcommand(SubCommand::with_name("ram").about("Dump current active settings (RAM) as yaml")),
         )
         .subcommand(SubCommand::with_name("snoop").about("Snoop MIDI messages"))
-        .subcommand(
-            SubCommand::with_name("passthrough")
-                .about("Passthrough (while snooping) MIDI messages"),
-        )
+        .subcommand(SubCommand::with_name("passthrough").about("Passthrough (while snooping) MIDI messages"))
         .subcommand(
             SubCommand::with_name("read")
                 .about("Read yaml bank descriptor from file and display it")
