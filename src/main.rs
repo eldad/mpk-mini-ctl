@@ -33,24 +33,10 @@ mod mpkmidi;
 mod u14;
 mod operations;
 
-// fn cmd_show_bank(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
-//     let bank = matches.value_of("bank").unwrap().parse::<u8>()?;
-//     show_bank(bank)?;
-//     Ok(())
-// }
-
 // fn cmd_dump_bank_yaml(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
 //     let bank = matches.value_of("bank").unwrap().parse::<u8>()?;
 //     dump_bank_yaml(bank)?;
 //     Ok(())
-// }
-
-// fn cmd_show(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
-//     match matches.subcommand_name() {
-//         Some("bank") => cmd_show_bank(matches.subcommand_matches("bank").unwrap()),
-//         Some("ram") => show_bank(0),
-//         _ => Err(Box::new(RuntimeError::new("please provide a valid command."))),
-//     }
 // }
 
 // fn cmd_dump_yaml(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
@@ -83,16 +69,6 @@ mod operations;
 //         .author(env!("CARGO_PKG_AUTHORS"))
 //         .about(env!("CARGO_PKG_DESCRIPTION"))
 //         .subcommand(
-//             SubCommand::with_name("show")
-//                 .about("Show commands")
-//                 .subcommand(
-//                     SubCommand::with_name("bank")
-//                         .about("Show bank settings")
-//                         .arg(Arg::with_name("bank").index(1).required(true)),
-//                 )
-//                 .subcommand(SubCommand::with_name("ram").about("Show current active settings (RAM)")),
-//         )
-//         .subcommand(
 //             SubCommand::with_name("dump")
 //                 .about("Dump settings")
 //                 .subcommand(
@@ -119,23 +95,13 @@ mod operations;
 //                         .help("0 for RAM, 1-4 for banks"),
 //                 ),
 //         )
-//         .arg(
-//             Arg::with_name("debug")
-//                 .required(false)
-//                 .long("debug")
-//                 .help("Prints debugging information"),
-//         )
-//         .get_matches();
+
 //
 //     match matches.subcommand_name() {
-//         Some("show") => cmd_show(matches.subcommand_matches("show").unwrap()),
 //         Some("dump") => cmd_dump_yaml(matches.subcommand_matches("dump").unwrap()),
 //         Some("passthrough") => passthrough(),
 //         Some("read") => cmd_read_yaml(matches.subcommand_matches("read").unwrap()),
 //         Some("send") => cmd_send_yaml(matches.subcommand_matches("send").unwrap()),
-//         _ => Err(Box::new(RuntimeError::new(
-//             "please provide a valid command (use 'help' for information)",
-//         ))),
 //     }
 // }
 
@@ -155,7 +121,14 @@ struct Args {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    /// Snoop MIDI messages
     Snoop,
+
+    /// Show bank settings
+    ShowBank { bank: u8 },
+
+    /// Show current active settings (RAM)
+    ShowRAM,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -175,6 +148,8 @@ fn main() -> anyhow::Result<()> {
 
     match args.command {
         Command::Snoop => operations::snoop(),
+        Command::ShowBank { bank } => operations::show_bank(bank),
+        Command::ShowRAM => operations::show_bank(0),
     }?;
 
     Ok(())
