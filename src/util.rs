@@ -64,5 +64,4 @@ where
         }
     }
     Err(AppError::MidiInputPortNotFound(name.to_owned()))
-
 }

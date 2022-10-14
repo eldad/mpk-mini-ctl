@@ -54,7 +54,10 @@ pub enum AppError {
     BankKnobsUnexpectedLength(usize),
     #[error("trying to parse pads with unexpected length {0} (expected 64)")]
     BankPadsUnexpectedLength(usize),
-    #[error("Unexpected length for bank descriptor ({0}, expected {})", MPK_BANK_DESCRIPTOR_LENGTH)]
+    #[error(
+        "Unexpected length for bank descriptor ({0}, expected {})",
+        MPK_BANK_DESCRIPTOR_LENGTH
+    )]
     BankDescriptionUnexpectedLength(usize),
 
     // MIDI
@@ -90,7 +93,7 @@ pub enum AppError {
     MidirConnectError(String),
     // mpsc
     #[error("mpsc RecvTimeoutError: {0}")]
-    MpscRecvTimeoutError(#[from] std::sync::mpsc::RecvTimeoutError)
+    MpscRecvTimeoutError(#[from] std::sync::mpsc::RecvTimeoutError),
 }
 
 // Special implementation due to thread unsafety types inside of error enum
