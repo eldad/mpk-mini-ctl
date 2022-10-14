@@ -23,7 +23,7 @@
  *
  */
 
-use crate::error::ParseError;
+use crate::error::AppError;
 use crate::u14::U14BE;
 use std::fmt;
 
@@ -77,14 +77,12 @@ impl<'de> Deserialize<'de> for Note {
 }
 
 impl Note {
-    fn from_str(s: &str) -> Result<Self, ParseError> {
+    fn from_str(s: &str) -> Result<Self, AppError> {
         let note_octave: Vec<&str> = s.split(' ').collect();
         if note_octave.len() != 2 {
-            return Err(ParseError::new(&format!(
-                "cannot parse note string {} (expected string with exactly one space)",
-                s
-            )));
+            return Err(AppError::NoteOctaveParse(s.to_owned()));
         }
+
         let note = match note_octave[0] {
             "C" => 0,
             "C#/Db" => 1,
@@ -108,12 +106,7 @@ impl Note {
             "A#" => 10,
             "Bb" => 10,
             "B" => 11,
-            _ => {
-                return Err(ParseError::new(&format!(
-                    "cannot parse note {} from {}",
-                    note_octave[0], s
-                )))
-            }
+            _ => return Err(AppError::NoteParse(note_octave[0].to_owned(), s.to_owned())),
         };
         let octave: i8 = note_octave[1].parse::<i8>().unwrap(); // TODO: wrap
         Ok(Note {
@@ -170,11 +163,11 @@ enum Toggle {
 }
 
 impl Toggle {
-    fn from(value: u8) -> Result<Self, ParseError> {
+    fn from(value: u8) -> Result<Self, AppError> {
         match value {
             0 => Ok(Toggle::Off),
             1 => Ok(Toggle::On),
-            _ => Err(ParseError::new(&format!("Unknown value for toggle {}", value))),
+            _ => Err(AppError::ToggleUnknown(value)),
         }
     }
 }
@@ -219,11 +212,11 @@ enum PadMode {
 }
 
 impl PadMode {
-    fn from(value: u8) -> Result<Self, ParseError> {
+    fn from(value: u8) -> Result<Self, AppError> {
         match value {
             0 => Ok(PadMode::Momentary),
             1 => Ok(PadMode::Toggle),
-            _ => Err(ParseError::new(&format!("Unknown padmode value {}", value))),
+            _ => Err(AppError::PadmodeUnknown(value)),
         }
     }
 }
@@ -254,7 +247,7 @@ impl fmt::Debug for Pad {
 }
 
 impl Pad {
-    fn from(value: [u8; 4]) -> Result<Self, ParseError> {
+    fn from(value: [u8; 4]) -> Result<Self, AppError> {
         Ok(Pad {
             note: Note { value: value[0] },
             program: value[1],
@@ -276,11 +269,11 @@ enum ClockSource {
 }
 
 impl ClockSource {
-    fn from(value: u8) -> Result<Self, ParseError> {
+    fn from(value: u8) -> Result<Self, AppError> {
         match value {
             0 => Ok(ClockSource::Internal),
             1 => Ok(ClockSource::External),
-            _ => Err(ParseError::new(&format!("Unknown clock source value {}", value))),
+            _ => Err(AppError::ClockSourceUnknown(value)),
         }
     }
 }
@@ -299,7 +292,7 @@ enum ArpeggiatorTimeDivision {
 }
 
 impl ArpeggiatorTimeDivision {
-    fn from(value: u8) -> Result<Self, ParseError> {
+    fn from(value: u8) -> Result<Self, AppError> {
         match value {
             0 => Ok(ArpeggiatorTimeDivision::_4),
             1 => Ok(ArpeggiatorTimeDivision::_4T),
@@ -309,7 +302,7 @@ impl ArpeggiatorTimeDivision {
             5 => Ok(ArpeggiatorTimeDivision::_16T),
             6 => Ok(ArpeggiatorTimeDivision::_32),
             7 => Ok(ArpeggiatorTimeDivision::_32T),
-            _ => Err(ParseError::new(&format!("Invalid arpeggiator time division {}", value))),
+            _ => Err(AppError::ArpeggiatorTimeDivisionInvalid(value)),
         }
     }
 }
@@ -333,7 +326,7 @@ enum ArpeggiatorMode {
 }
 
 impl ArpeggiatorMode {
-    fn from(value: u8) -> Result<Self, ParseError> {
+    fn from(value: u8) -> Result<Self, AppError> {
         match value {
             0 => Ok(ArpeggiatorMode::Up),
             1 => Ok(ArpeggiatorMode::Down),
@@ -341,7 +334,7 @@ impl ArpeggiatorMode {
             3 => Ok(ArpeggiatorMode::Inclusive),
             4 => Ok(ArpeggiatorMode::Order),
             5 => Ok(ArpeggiatorMode::Random),
-            _ => Err(ParseError::new(&format!("Invalid arpeggiator mode {}", value))),
+            _ => Err(AppError::ArpeggiatorModeInvalid(value)),
         }
     }
 }
@@ -358,7 +351,7 @@ enum Swing {
 }
 
 impl Swing {
-    fn from(value: u8) -> Result<Self, ParseError> {
+    fn from(value: u8) -> Result<Self, AppError> {
         match value {
             0 => Ok(Swing::_50),
             1 => Ok(Swing::_55),
@@ -366,7 +359,7 @@ impl Swing {
             3 => Ok(Swing::_59),
             4 => Ok(Swing::_61),
             5 => Ok(Swing::_64),
-            _ => Err(ParseError::new(&format!("Invalid swing value {}", value))),
+            _ => Err(AppError::SwingInvalid(value)),
         }
     }
 }
@@ -387,12 +380,12 @@ enum Joystick {
 }
 
 impl Joystick {
-    fn from(bytes: [u8; 3]) -> Result<Self, ParseError> {
+    fn from(bytes: [u8; 3]) -> Result<Self, AppError> {
         match bytes[0] {
             0 => Ok(Joystick::Pitchbend),
             1 => Ok(Joystick::ControlChannel(bytes[1])),
             2 => Ok(Joystick::SplitControlChannels(bytes[1], bytes[2])),
-            _ => Err(ParseError::new(&format!("Invalid joystick mode {}", bytes[1]))),
+            _ => Err(AppError::JoystickModeInvalid(bytes[0], bytes[1], bytes[2])),
         }
     }
 
@@ -406,7 +399,7 @@ impl Joystick {
 }
 
 // MpkBankDescriptor
-const MPK_BANK_DESCRIPTOR_LENGTH: usize = 108;
+pub(crate) const MPK_BANK_DESCRIPTOR_LENGTH: usize = 108;
 
 #[derive(Serialize, Deserialize)]
 pub struct MpkBankDescriptor {
@@ -469,13 +462,9 @@ impl fmt::Debug for MpkBankDescriptor {
 }
 
 impl MpkBankDescriptor {
-    fn parse_knobs(bytes: &[u8]) -> Result<[Knob; 8], ParseError> {
+    fn parse_knobs(bytes: &[u8]) -> Result<[Knob; 8], AppError> {
         if bytes.len() != 8 * 3 {
-            Err(ParseError::new(&format!(
-                "trying to parse knobs with unexpected length {} (expected {})",
-                bytes.len(),
-                8 * 3
-            )))
+            Err(AppError::BankKnobsUnexpectedLength(bytes.len()))
         } else {
             let mut knobs: [Knob; 8] = [Knob::default(); 8];
             for i in 0..8 {
@@ -485,13 +474,9 @@ impl MpkBankDescriptor {
         }
     }
 
-    fn parse_pads(bytes: &[u8]) -> Result<[Pad; 16], ParseError> {
+    fn parse_pads(bytes: &[u8]) -> Result<[Pad; 16], AppError> {
         if bytes.len() != 16 * 4 {
-            Err(ParseError::new(&format!(
-                "trying to parse pads with unexpected length {} (expected {})",
-                bytes.len(),
-                16 * 4
-            )))
+            Err(AppError::BankPadsUnexpectedLength(bytes.len()))
         } else {
             let mut pads: [Pad; 16] = [Pad::default(); 16];
             for i in 0..16 {
@@ -501,13 +486,9 @@ impl MpkBankDescriptor {
         }
     }
 
-    pub fn from(bytes: &[u8]) -> Result<Self, ParseError> {
+    pub fn from(bytes: &[u8]) -> Result<Self, AppError> {
         if bytes.len() != MPK_BANK_DESCRIPTOR_LENGTH {
-            Err(ParseError::new(&format!(
-                "Unexpected length for bank descriptor ({}, expected {})",
-                bytes.len(),
-                MPK_BANK_DESCRIPTOR_LENGTH
-            )))
+            Err(AppError::BankDescriptionUnexpectedLength(bytes.len()))
         } else {
             Ok(MpkBankDescriptor {
                 pad_midi_channel: bytes[0],

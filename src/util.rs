@@ -23,21 +23,10 @@
  *
  */
 
-use crate::error::RuntimeError;
-use std::error::Error;
-
 use midir::{Ignore, MidiInput, MidiInputConnection, MidiOutput, MidiOutputConnection};
 use regex::Regex;
 
-macro_rules! check_bank_value {
-    ($bank:expr) => {
-        if $bank > 4 {
-            return Err(Box::new(RuntimeError::new(
-                "Bank value must be between 0 and 4 (0 = RAM)",
-            )));
-        }
-    };
-}
+use crate::error::AppError;
 
 macro_rules! append_array {
     ($vec:expr, $arr:expr) => {
@@ -47,26 +36,20 @@ macro_rules! append_array {
 
 const DEVICE_NAME: &str = "MPKmini2";
 
-pub fn midi_out_connect() -> Result<MidiOutputConnection, Box<dyn Error>> {
+pub fn midi_out_connect() -> Result<MidiOutputConnection, AppError> {
     let midi_output = MidiOutput::new(env!("CARGO_PKG_NAME"))?;
     let name = env!("CARGO_PKG_NAME");
     let re = Regex::new(&format!("{} [0-9]+:[0-9]", DEVICE_NAME)).unwrap();
     for port in midi_output.ports() {
         let port_name = midi_output.port_name(&port)?;
         if re.is_match(port_name.as_str()) {
-            return match midi_output.connect(&port, name) {
-                Ok(ret) => Ok(ret),
-                Err(e) => Err(Box::new(e)),
-            };
+            return Ok(midi_output.connect(&port, name)?);
         }
     }
-    Err(Box::new(RuntimeError::new(&format!(
-        "MIDI Out port '{}' not found.",
-        name
-    ))))
+    Err(AppError::MidiOutputPortNotFound(name.to_owned()))
 }
 
-pub fn midi_in_connect<F, T: Send>(callback: F, data: T) -> Result<MidiInputConnection<T>, Box<dyn Error>>
+pub fn midi_in_connect<F, T: Send>(callback: F, data: T) -> Result<MidiInputConnection<T>, AppError>
 where
     F: FnMut(u64, &[u8], &mut T) + Send + 'static,
 {
@@ -77,14 +60,8 @@ where
     for port in midi_input.ports() {
         let port_name = midi_input.port_name(&port)?;
         if re.is_match(port_name.as_str()) {
-            return match midi_input.connect(&port, name, callback, data) {
-                Ok(ret) => Ok(ret),
-                Err(e) => Err(Box::new(e)),
-            };
+            return Ok(midi_input.connect(&port, name, callback, data)?);
         }
     }
-    Err(Box::new(RuntimeError::new(&format!(
-        "MIDI In port '{}' not found.",
-        name
-    ))))
+    Err(AppError::MidiInputPortNotFound(name.to_owned()))
 }

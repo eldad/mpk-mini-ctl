@@ -23,233 +23,90 @@
  *
  */
 
-use std::error::Error;
-use std::fs::File;
-use std::sync::mpsc;
-use std::thread::sleep;
-use std::time::Duration;
-
 mod error;
-use crate::error::*;
-
-use log::{debug, error, info, warn};
 
 #[macro_use]
 mod util;
 
 mod mpkbank;
 mod mpkmidi;
+mod operations;
 mod u14;
 
-use clap::{App, Arg, ArgMatches, SubCommand};
-
 use crate::mpkbank::MpkBankDescriptor;
-use crate::mpkmidi::*;
-use crate::util::*;
 
-fn snoop() -> Result<(), Box<dyn Error>> {
-    let cb = |_, bytes: &[u8], _: &mut _| {
-        debug!("rx bytes: {:?}", bytes);
-        match MpkMidiMessage::parse_msg(bytes) {
-            Ok(m) => println!("{:?}", m),
-            Err(e) => warn!("Unparsed: {}; bytes: {:?}", e, bytes),
-        }
-    };
-    let _midi_in = midi_in_connect(cb, ())?;
-    info!("Snoop started. Use CTRL-C to stop.");
-    loop {
-        sleep(Duration::from_millis(250));
-    }
+use clap::{Parser, Subcommand};
+use log::debug;
+use std::fs::File;
+
+/// AKAI MPK Mini mkII Control Tool
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None, help_template = "
+{before-help}{name} {version}
+{author-with-newline}{about-with-newline}
+{usage-heading} {usage}
+
+{all-args}{after-help}")]
+struct Args {
+    /// Prints debugging information
+    #[arg(long)]
+    debug: bool,
+
+    #[command(subcommand)]
+    command: Command,
 }
 
-fn passthrough() -> Result<(), Box<dyn Error>> {
-    let (tx, rx) = mpsc::channel();
+#[derive(Subcommand, Debug)]
+enum Command {
+    /// Snoop MIDI messages
+    Snoop,
 
-    let cb = move |_, bytes: &[u8], _: &mut _| {
-        debug!("rx bytes: {:?}", bytes);
-        match MpkMidiMessage::parse_msg(bytes) {
-            Ok(m) => println!("{:?}", m),
-            Err(e) => warn!("Unparsed: {}; bytes: {:?}", e, bytes),
-        }
-        if let Err(e) = tx.send(Vec::from(bytes)) {
-            error!("Error while sending: {}", e);
-        }
-    };
+    /// Passthrough (while snooping) MIDI messages
+    Passthrough,
 
-    let mut midi_out = midi_out_connect()?;
-    let _midi_in = midi_in_connect(cb, ())?;
+    /// Show bank settings
+    ShowBank { bank: u8 },
 
-    info!("Passthrough started: MIDI messages from input will be sent to output. Use CTRL-C to stop.");
-    loop {
-        match rx.recv() {
-            Ok(m) => {
-                if let Err(e) = midi_out.send(m.as_slice()) {
-                    error!("Error while forwarding: {}", e);
-                }
-            }
-            Err(e) => {
-                error!("Error while receiving: {}", e);
-            }
-        }
-    }
+    /// Show current active settings (RAM)
+    ShowRAM,
+
+    /// Read yaml bank descriptor from file and display it
+    ReadFile { filename: String },
+
+    /// Dump bank settings as yaml
+    DumpBankSettings { bank: u8 },
+
+    /// Dump current active settings (RAM) as yaml
+    DumpRAMSettings,
+
+    /// Read yaml bank descriptor from file and apply it on a bank
+    LoadBank { filename: String, bank: u8 },
+
+    /// Read yaml bank descriptor from file and apply it to active settings (RAM)
+    LoadRAM { filename: String },
 }
 
-fn get_bank_desc(bank: u8) -> Result<MpkBankDescriptor, Box<dyn Error>> {
-    check_bank_value!(bank);
-
-    let (tx, rx) = mpsc::channel();
-
-    let cb = move |_, bytes: &[u8], _: &mut _| {
-        if let Ok(m) = MpkMidiMessage::parse_msg(bytes) {
-            if let MpkMidiMessage::Bank(bank_rx, d) = m {
-                if bank != bank_rx {
-                    error!("Error: received bank {}, expected {}", bank_rx, bank);
-                }
-                if let Err(e) = tx.send(d) {
-                    error!("Error while sending on channel: {}", e);
-                }
-            } else {
-                warn!("Unexpected message (ignored): {:?}", m);
-            }
-        } else {
-            warn!("Unparsed: {:?}", bytes);
-        }
-    };
-
-    let mut midi_out = midi_out_connect()?;
-    let midi_in = midi_in_connect(cb, ())?;
-
-    midi_out.send(sysex_get_bank(bank).as_slice())?;
-    let bank_desc = rx.recv_timeout(Duration::new(10, 0))?;
-
-    midi_out.close();
-    midi_in.close();
-
-    Ok(bank_desc)
-}
-
-fn set_bank_from_desc(bank: u8, bank_desc: MpkBankDescriptor) -> Result<(), Box<dyn Error>> {
-    check_bank_value!(bank);
-
-    let mut midi_out = midi_out_connect()?;
-    midi_out.send(&sysex_set_bank(bank, bank_desc))?;
-    midi_out.close();
-
-    Ok(())
-}
-
-fn show_bank(bank: u8) -> Result<(), Box<dyn Error>> {
-    let bank_desc = get_bank_desc(bank)?;
-    println!("Bank {}:\n{}", bank, bank_desc);
-    Ok(())
-}
-
-fn dump_bank_yaml(bank: u8) -> Result<(), Box<dyn Error>> {
-    let bank_desc = get_bank_desc(bank)?;
-    let serialized = serde_yaml::to_string(&bank_desc).unwrap();
-    println!("{}", serialized);
-    Ok(())
-}
-
-fn cmd_show_bank(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
-    let bank = matches.value_of("bank").unwrap().parse::<u8>()?;
-    show_bank(bank)?;
-    Ok(())
-}
-
-fn cmd_dump_bank_yaml(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
-    let bank = matches.value_of("bank").unwrap().parse::<u8>()?;
-    dump_bank_yaml(bank)?;
-    Ok(())
-}
-
-fn cmd_show(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
-    match matches.subcommand_name() {
-        Some("bank") => cmd_show_bank(matches.subcommand_matches("bank").unwrap()),
-        Some("ram") => show_bank(0),
-        _ => Err(Box::new(RuntimeError::new("please provide a valid command."))),
-    }
-}
-
-fn cmd_dump_yaml(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
-    match matches.subcommand_name() {
-        Some("bank") => cmd_dump_bank_yaml(matches.subcommand_matches("bank").unwrap()),
-        Some("ram") => dump_bank_yaml(0),
-        _ => Err(Box::new(RuntimeError::new("please provide a valid command."))),
-    }
-}
-
-fn cmd_read_yaml(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
-    let filename = matches.value_of("filename").unwrap().parse::<String>()?;
+fn read_yaml(filename: &str) -> anyhow::Result<()> {
     let bank_desc: MpkBankDescriptor = serde_yaml::from_reader(File::open(&filename)?)?;
     println!("{}", bank_desc);
     debug!("{:?}", bank_desc.into_bytes());
     Ok(())
 }
 
-fn cmd_send_yaml(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
-    let filename = matches.value_of("filename").unwrap().parse::<String>()?;
+fn load_yaml(filename: &str, bank: u8) -> anyhow::Result<()> {
     let bank_desc: MpkBankDescriptor = serde_yaml::from_reader(File::open(&filename)?)?;
-    let bank = matches.value_of("destination").unwrap().parse::<u8>()?;
-    set_bank_from_desc(bank, bank_desc)?;
+    operations::set_bank_from_desc(bank, bank_desc)?;
     Ok(())
 }
 
-fn app() -> Result<(), Box<dyn Error>> {
-    let matches = App::new(env!("CARGO_PKG_NAME"))
-        .version(env!("CARGO_PKG_VERSION"))
-        .author(env!("CARGO_PKG_AUTHORS"))
-        .about(env!("CARGO_PKG_DESCRIPTION"))
-        .subcommand(
-            SubCommand::with_name("show")
-                .about("Show commands")
-                .subcommand(
-                    SubCommand::with_name("bank")
-                        .about("Show bank settings")
-                        .arg(Arg::with_name("bank").index(1).required(true)),
-                )
-                .subcommand(SubCommand::with_name("ram").about("Show current active settings (RAM)")),
-        )
-        .subcommand(
-            SubCommand::with_name("dump")
-                .about("Dump settings")
-                .subcommand(
-                    SubCommand::with_name("bank")
-                        .about("Dump bank settings as yaml")
-                        .arg(Arg::with_name("bank").index(1).required(true)),
-                )
-                .subcommand(SubCommand::with_name("ram").about("Dump current active settings (RAM) as yaml")),
-        )
-        .subcommand(SubCommand::with_name("snoop").about("Snoop MIDI messages"))
-        .subcommand(SubCommand::with_name("passthrough").about("Passthrough (while snooping) MIDI messages"))
-        .subcommand(
-            SubCommand::with_name("read")
-                .about("Read yaml bank descriptor from file and display it")
-                .arg(Arg::with_name("filename").index(1).required(true)),
-        )
-        .subcommand(
-            SubCommand::with_name("send")
-                .about("Read yaml bank descriptor from file and send it to the device")
-                .arg(Arg::with_name("filename").index(1).required(true))
-                .arg(
-                    Arg::with_name("destination")
-                        .index(2)
-                        .required(true)
-                        .help("0 for RAM, 1-4 for banks"),
-                ),
-        )
-        .arg(
-            Arg::with_name("debug")
-                .required(false)
-                .long("debug")
-                .help("Prints debugging information"),
-        )
-        .get_matches();
+fn main() -> anyhow::Result<()> {
+    let args = Args::parse();
 
-    let log_level = match matches.is_present("debug") {
+    let log_level = match args.debug {
         false => simplelog::LevelFilter::Info,
         true => simplelog::LevelFilter::Debug,
     };
+
     simplelog::CombinedLogger::init(vec![simplelog::TermLogger::new(
         log_level,
         simplelog::Config::default(),
@@ -257,22 +114,17 @@ fn app() -> Result<(), Box<dyn Error>> {
         simplelog::ColorChoice::Auto,
     )])?;
 
-    match matches.subcommand_name() {
-        Some("show") => cmd_show(matches.subcommand_matches("show").unwrap()),
-        Some("dump") => cmd_dump_yaml(matches.subcommand_matches("dump").unwrap()),
-        Some("snoop") => snoop(),
-        Some("passthrough") => passthrough(),
-        Some("read") => cmd_read_yaml(matches.subcommand_matches("read").unwrap()),
-        Some("send") => cmd_send_yaml(matches.subcommand_matches("send").unwrap()),
-        _ => Err(Box::new(RuntimeError::new(
-            "please provide a valid command (use 'help' for information)",
-        ))),
-    }
-}
+    match args.command {
+        Command::Snoop => operations::snoop(),
+        Command::ShowBank { bank } => operations::show_bank(bank),
+        Command::ShowRAM => operations::show_bank(0),
+        Command::Passthrough => operations::passthrough(),
+        Command::ReadFile { filename } => Ok(read_yaml(&filename)?),
+        Command::DumpBankSettings { bank } => operations::dump_bank_yaml(bank),
+        Command::DumpRAMSettings => operations::dump_bank_yaml(0),
+        Command::LoadBank { filename, bank } => Ok(load_yaml(&filename, bank)?),
+        Command::LoadRAM { filename } => Ok(load_yaml(&filename, 0)?),
+    }?;
 
-fn main() {
-    match app() {
-        Ok(_) => (),
-        Err(err) => error!("Error: {}", err),
-    }
+    Ok(())
 }
