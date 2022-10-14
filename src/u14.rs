@@ -23,10 +23,11 @@
  *
  */
 
-use crate::error::ParseError;
 use std::fmt;
 
 use serde_derive::{Deserialize, Serialize};
+
+use crate::error::AppError;
 
 /* 14 bits unsigned, big endian */
 #[derive(Serialize, Deserialize)]
@@ -35,12 +36,9 @@ pub struct U14BE {
 }
 
 impl U14BE {
-    pub fn from_device(bytes: [u8; 2]) -> Result<U14BE, ParseError> {
+    pub fn from_device(bytes: [u8; 2]) -> Result<U14BE, AppError> {
         if ((bytes[0] | bytes[1]) & 0x80) == 0x80 {
-            Err(ParseError::new(&format!(
-                "ERROR: MSB set on U14 type from device: {:?}",
-                bytes
-            )))
+            Err(AppError::U14BEMsbSet(bytes[0], bytes[1]))
         } else {
             Ok(U14BE {
                 host: ((bytes[0] as u16) << 7) | bytes[1] as u16,
@@ -48,12 +46,9 @@ impl U14BE {
         }
     }
 
-    pub fn to_device(&self) -> Result<[u8; 2], ParseError> {
+    pub fn to_device(&self) -> Result<[u8; 2], AppError> {
         if self.host & 0xc000 != 0 {
-            Err(ParseError::new(&format!(
-                "value too large to convert into u14: {}",
-                self.host
-            )))
+            Err(AppError::U14BEValueTooLarge(self.host))
         } else {
             Ok([((self.host & 0x3f80) >> 7) as u8, (self.host & 0x007f) as u8])
         }

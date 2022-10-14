@@ -23,67 +23,75 @@
  *
  */
 
-use std::error::Error;
-use std::fmt;
+use thiserror::Error;
+
+use crate::mpkbank::MPK_BANK_DESCRIPTOR_LENGTH;
 
 /* Runtime Error */
 
-#[derive(Debug)]
-pub struct RuntimeError {
-    reason: String,
-}
+#[derive(Debug, Error)]
+pub enum AppError {
+    // Parsing
 
-impl RuntimeError {
-    pub fn new(reason: &str) -> RuntimeError {
-        RuntimeError {
-            reason: String::from(reason),
-        }
-    }
-}
+    #[error("Cannot parse note/octave string {0} (expected string with exactly one space)")]
+    NoteOctaveParse(String),
+    #[error("cannot parse note {0} (from {1})")]
+    NoteParse(String, String),
+    #[error("Unknown value for toggle: {0}")]
+    ToggleUnknown(u8),
+    #[error("Unknown padmode value: {0}")]
+    PadmodeUnknown(u8),
+    #[error("Unknown clock source value: {0}")]
+    ClockSourceUnknown(u8),
+    #[error("Arpeggiator time division invalid value: {0}")]
+    ArpeggiatorTimeDivisionInvalid(u8),
+    #[error("Arpeggiator mode invalid: {0}")]
+    ArpeggiatorModeInvalid(u8),
+    #[error("Swing value invalid: {0}")]
+    SwingInvalid(u8),
+    #[error("Joystick mode invalid: {0}/{1}/{2}")]
+    JoystickModeInvalid(u8, u8, u8),
+    #[error("trying to parse knobs with unexpected length {0} (expected 24)")]
+    BankKnobsUnexpectedLength(usize),
+    #[error("trying to parse pads with unexpected length {0} (expected 64)")]
+    BankPadsUnexpectedLength(usize),
+    #[error("Unexpected length for bank descriptor ({0}, expected {})", MPK_BANK_DESCRIPTOR_LENGTH)]
+    BankDescriptionUnexpectedLength(usize),
 
-impl Error for RuntimeError {
-    fn description(&self) -> &str {
-        &self.reason
-    }
+    // MIDI
+    #[error("SysEx error: {0}")]
+    SysEx(String),
+    #[error("received empty message")]
+    SysExEmptyMessage,
+    #[error("received message with MSB unset (<127)")]
+    SysExMsbUnset,
 
-    fn cause(&self) -> Option<&dyn Error> {
-        None
-    }
-}
+    // U14BE
+    #[error("U14BE error: MSB set on U14 type from device {0}/{1}")]
+    U14BEMsbSet(u8, u8),
+    #[error("U14BE error: value too large to convert into u14: {0}")]
+    U14BEValueTooLarge(u16),
 
-impl fmt::Display for RuntimeError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Run Time Error: {}", self.reason)
-    }
-}
+    // Other
+    #[error("Bank value must be between 0 and 4 (0 = RAM), got {0}")]
+    BankIndexOutOfBounds(u8),
+    #[error("MIDI output port '{0}' not found")]
+    MidiOutputPortNotFound(String),
+    #[error("MIDI input port '{0}' not found")]
+    MidiInputPortNotFound(String),
 
-/* Parse Error */
-
-#[derive(Debug)]
-pub struct ParseError {
-    reason: String,
-}
-
-impl ParseError {
-    pub fn new(reason: &str) -> ParseError {
-        ParseError {
-            reason: String::from(reason),
-        }
-    }
-}
-
-impl Error for ParseError {
-    fn description(&self) -> &str {
-        &self.reason
-    }
-
-    fn cause(&self) -> Option<&dyn Error> {
-        None
-    }
-}
-
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Parse Error: {}", self.reason)
-    }
+    // midir
+    #[error("Midir InitError: {0}")]
+    MidirInitError(#[from] midir::InitError),
+    #[error("Midir SendError: {0}")]
+    MidirSendError(#[from] midir::SendError),
+    #[error("Midir MidirPortInfoError: {0}")]
+    MidirPortInfoError(#[from] midir::PortInfoError),
+    #[error("Midir connect error (output): {0}")]
+    ConnectErrorMidiOutput(#[from] midir::ConnectError<midir::MidiOutput>),
+    #[error("Midir connect error (input): {0}")]
+    ConnectErrorMidiInput(#[from] midir::ConnectError<midir::MidiInput>),
+    // mpsc
+    #[error("mpsc RecvTimeoutError: {0}")]
+    MpscRecvTimeoutError(#[from] std::sync::mpsc::RecvTimeoutError)
 }

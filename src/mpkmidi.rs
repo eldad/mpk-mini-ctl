@@ -23,8 +23,7 @@
  *
  */
 
-use crate::error::ParseError;
-use crate::mpkbank::MpkBankDescriptor;
+use crate::{error::AppError, mpkbank::MpkBankDescriptor};
 
 // https://www.midi.org/specifications/item/table-1-summary-of-midi-message
 const MIDI_SYSEX: u8 = 0xf0;
@@ -90,16 +89,16 @@ pub enum MpkMidiMessage {
 }
 
 impl MpkMidiMessage {
-    fn parse_sysex(bytes: &[u8]) -> Result<Self, ParseError> {
+    fn parse_sysex(bytes: &[u8]) -> Result<Self, AppError> {
         if bytes.len() < 3 {
-            return Err(ParseError::new(&format!("SysEx rx error: runt: {:?}", bytes)));
+            return Err(AppError::SysEx(format!("runt: {:?}", bytes)));
         }
         if *bytes.last().unwrap() != MIDI_SYSEX_END {
-            return Err(ParseError::new(&format!("SysEx rx error: malformed: {:?}", bytes)));
+            return Err(AppError::SysEx(format!("malformed: {:?}", bytes)));
         }
         if bytes[1] != SYSEX_AKAI {
-            return Err(ParseError::new(&format!(
-                "SysEx rx error: non-AKAI: (manufacturer={:x}, expected={:x}) {:?}",
+            return Err(AppError::SysEx(format!(
+                "non-AKAI: (manufacturer={:x}, expected={:x}) {:?}",
                 bytes[1], SYSEX_AKAI, bytes
             )));
         }
@@ -111,14 +110,11 @@ impl MpkMidiMessage {
                 MpkBankDescriptor::from(&payload[SYSEX_MPK_BANK.len() + 1..])?,
             ))
         } else {
-            Err(ParseError::new(&format!(
-                "WARNING: unknown AKAI sysex message {:?}",
-                payload
-            )))
+            Err(AppError::SysEx(format!("unknown AKAI sysex message {:?}", payload)))
         }
     }
 
-    fn parse_channel_msg(bytes: &[u8]) -> Result<Self, ParseError> {
+    fn parse_channel_msg(bytes: &[u8]) -> Result<Self, AppError> {
         let channel = bytes[0] & 0x0f;
         match bytes[0] & 0xf0 {
             MIDI_NOTE_OFF => Ok(MpkMidiMessage::NoteOff(channel, bytes[1], bytes[2])),
@@ -132,13 +128,13 @@ impl MpkMidiMessage {
         }
     }
 
-    pub fn parse_msg(bytes: &[u8]) -> Result<Self, ParseError> {
+    pub fn parse_msg(bytes: &[u8]) -> Result<Self, AppError> {
         if bytes.is_empty() {
-            return Err(ParseError::new("ERROR: received empty message"));
+            return Err(AppError::SysExEmptyMessage);
         }
 
         if bytes[0] < 127 {
-            return Err(ParseError::new("ERROR: received message with MSB unset (<127)"));
+            return Err(AppError::SysExMsbUnset);
         }
 
         if bytes[0] & 0xf0 != 0xf0 {

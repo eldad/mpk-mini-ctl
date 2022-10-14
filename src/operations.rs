@@ -23,7 +23,6 @@
  *
  */
 
-use std::error::Error;
 use std::sync::mpsc;
 use std::thread::sleep;
 use std::time::Duration;
@@ -36,7 +35,7 @@ use crate::mpkbank::MpkBankDescriptor;
 use crate::mpkmidi::*;
 use crate::util::*;
 
-fn snoop() -> Result<(), Box<dyn Error>> {
+fn snoop() -> Result<(), AppError> {
     let cb = |_, bytes: &[u8], _: &mut _| {
         debug!("rx bytes: {:?}", bytes);
         match MpkMidiMessage::parse_msg(bytes) {
@@ -51,7 +50,7 @@ fn snoop() -> Result<(), Box<dyn Error>> {
     }
 }
 
-fn passthrough() -> Result<(), Box<dyn Error>> {
+fn passthrough() -> Result<(), AppError> {
     let (tx, rx) = mpsc::channel();
 
     let cb = move |_, bytes: &[u8], _: &mut _| {
@@ -83,8 +82,10 @@ fn passthrough() -> Result<(), Box<dyn Error>> {
     }
 }
 
-fn get_bank_desc(bank: u8) -> Result<MpkBankDescriptor, Box<dyn Error>> {
-    check_bank_value!(bank);
+fn get_bank_desc(bank: u8) -> Result<MpkBankDescriptor, AppError> {
+    if bank > 4 {
+        return Err(AppError::BankIndexOutOfBounds(bank));
+    }
 
     let (tx, rx) = mpsc::channel();
 
@@ -117,8 +118,10 @@ fn get_bank_desc(bank: u8) -> Result<MpkBankDescriptor, Box<dyn Error>> {
     Ok(bank_desc)
 }
 
-fn set_bank_from_desc(bank: u8, bank_desc: MpkBankDescriptor) -> Result<(), Box<dyn Error>> {
-    check_bank_value!(bank);
+fn set_bank_from_desc(bank: u8, bank_desc: MpkBankDescriptor) -> Result<(), AppError> {
+    if bank > 4 {
+        return Err(AppError::BankIndexOutOfBounds(bank));
+    }
 
     let mut midi_out = midi_out_connect()?;
     midi_out.send(&sysex_set_bank(bank, bank_desc))?;
@@ -127,13 +130,13 @@ fn set_bank_from_desc(bank: u8, bank_desc: MpkBankDescriptor) -> Result<(), Box<
     Ok(())
 }
 
-fn show_bank(bank: u8) -> Result<(), Box<dyn Error>> {
+fn show_bank(bank: u8) -> Result<(), AppError> {
     let bank_desc = get_bank_desc(bank)?;
     println!("Bank {}:\n{}", bank, bank_desc);
     Ok(())
 }
 
-fn dump_bank_yaml(bank: u8) -> Result<(), Box<dyn Error>> {
+fn dump_bank_yaml(bank: u8) -> Result<(), AppError> {
     let bank_desc = get_bank_desc(bank)?;
     let serialized = serde_yaml::to_string(&bank_desc).unwrap();
     println!("{}", serialized);
