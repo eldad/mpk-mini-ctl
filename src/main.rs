@@ -33,23 +33,20 @@ mod mpkmidi;
 mod operations;
 mod u14;
 
-use log::debug;
-
-// fn app() -> Result<(), Box<dyn Error>> {
-//     let matches = App::new(env!("CARGO_PKG_NAME"))
-//         .version(env!("CARGO_PKG_VERSION"))
-//         .author(env!("CARGO_PKG_AUTHORS"))
-//         .about(env!("CARGO_PKG_DESCRIPTION"))
-
-use std::fs::File;
+use crate::mpkbank::MpkBankDescriptor;
 
 use clap::{Parser, Subcommand};
-
-use crate::mpkbank::MpkBankDescriptor;
+use log::debug;
+use std::fs::File;
 
 /// AKAI MPK Mini mkII Control Tool
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version, about, long_about = None, help_template = "
+{before-help}{name} {version}
+{author-with-newline}{about-with-newline}
+{usage-heading} {usage}
+
+{all-args}{after-help}")]
 struct Args {
     /// Prints debugging information
     #[arg(long)]
