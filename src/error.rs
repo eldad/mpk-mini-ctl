@@ -87,11 +87,16 @@ pub enum AppError {
     MidirSendError(#[from] midir::SendError),
     #[error("Midir MidirPortInfoError: {0}")]
     MidirPortInfoError(#[from] midir::PortInfoError),
-    #[error("Midir connect error (output): {0}")]
-    ConnectErrorMidiOutput(#[from] midir::ConnectError<midir::MidiOutput>),
-    #[error("Midir connect error (input): {0}")]
-    ConnectErrorMidiInput(#[from] midir::ConnectError<midir::MidiInput>),
+    #[error("Midir connect error {0}")]
+    MidirConnectError(String),
     // mpsc
     #[error("mpsc RecvTimeoutError: {0}")]
     MpscRecvTimeoutError(#[from] std::sync::mpsc::RecvTimeoutError)
+}
+
+// Special implementation due to thread unsafety types inside of error enum
+impl<T> From<midir::ConnectError<T>> for AppError {
+    fn from(err: midir::ConnectError<T>) -> Self {
+        Self::MidirConnectError(format!("{err}"))
+    }
 }

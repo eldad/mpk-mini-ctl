@@ -102,7 +102,6 @@ mod operations;
 //                 )
 //                 .subcommand(SubCommand::with_name("ram").about("Dump current active settings (RAM) as yaml")),
 //         )
-//         .subcommand(SubCommand::with_name("snoop").about("Snoop MIDI messages"))
 //         .subcommand(SubCommand::with_name("passthrough").about("Passthrough (while snooping) MIDI messages"))
 //         .subcommand(
 //             SubCommand::with_name("read")
@@ -142,7 +141,6 @@ mod operations;
 //     match matches.subcommand_name() {
 //         Some("show") => cmd_show(matches.subcommand_matches("show").unwrap()),
 //         Some("dump") => cmd_dump_yaml(matches.subcommand_matches("dump").unwrap()),
-//         Some("snoop") => snoop(),
 //         Some("passthrough") => passthrough(),
 //         Some("read") => cmd_read_yaml(matches.subcommand_matches("read").unwrap()),
 //         Some("send") => cmd_send_yaml(matches.subcommand_matches("send").unwrap()),
@@ -152,9 +150,31 @@ mod operations;
 //     }
 // }
 
-fn main() {
-    // match app() {
-    //     Ok(_) => (),
-    //     Err(err) => error!("Error: {}", err),
-    // }
+use clap::{Parser, Subcommand};
+
+/// AKAI MPK Mini mkII Control Tool
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+   /// Prints debugging information
+   #[arg(long)]
+   debug: bool,
+
+   #[command(subcommand)]
+   command: Command,
+}
+
+#[derive(Subcommand, Debug)]
+enum Command {
+    Snoop,
+}
+
+fn main() -> anyhow::Result<()> {
+    let args = Args::parse();
+
+    match args.command {
+        Command::Snoop => operations::snoop(),
+    }?;
+
+    Ok(())
 }

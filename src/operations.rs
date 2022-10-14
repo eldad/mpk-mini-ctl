@@ -35,7 +35,7 @@ use crate::mpkbank::MpkBankDescriptor;
 use crate::mpkmidi::*;
 use crate::util::*;
 
-fn snoop() -> Result<(), AppError> {
+pub fn snoop() -> Result<(), AppError> {
     let cb = |_, bytes: &[u8], _: &mut _| {
         debug!("rx bytes: {:?}", bytes);
         match MpkMidiMessage::parse_msg(bytes) {
@@ -50,7 +50,7 @@ fn snoop() -> Result<(), AppError> {
     }
 }
 
-fn passthrough() -> Result<(), AppError> {
+pub fn passthrough() -> Result<(), AppError> {
     let (tx, rx) = mpsc::channel();
 
     let cb = move |_, bytes: &[u8], _: &mut _| {
@@ -82,7 +82,7 @@ fn passthrough() -> Result<(), AppError> {
     }
 }
 
-fn get_bank_desc(bank: u8) -> Result<MpkBankDescriptor, AppError> {
+pub fn get_bank_desc(bank: u8) -> Result<MpkBankDescriptor, AppError> {
     if bank > 4 {
         return Err(AppError::BankIndexOutOfBounds(bank));
     }
@@ -118,7 +118,7 @@ fn get_bank_desc(bank: u8) -> Result<MpkBankDescriptor, AppError> {
     Ok(bank_desc)
 }
 
-fn set_bank_from_desc(bank: u8, bank_desc: MpkBankDescriptor) -> Result<(), AppError> {
+pub fn set_bank_from_desc(bank: u8, bank_desc: MpkBankDescriptor) -> Result<(), AppError> {
     if bank > 4 {
         return Err(AppError::BankIndexOutOfBounds(bank));
     }
@@ -130,13 +130,13 @@ fn set_bank_from_desc(bank: u8, bank_desc: MpkBankDescriptor) -> Result<(), AppE
     Ok(())
 }
 
-fn show_bank(bank: u8) -> Result<(), AppError> {
+pub fn show_bank(bank: u8) -> Result<(), AppError> {
     let bank_desc = get_bank_desc(bank)?;
     println!("Bank {}:\n{}", bank, bank_desc);
     Ok(())
 }
 
-fn dump_bank_yaml(bank: u8) -> Result<(), AppError> {
+pub fn dump_bank_yaml(bank: u8) -> Result<(), AppError> {
     let bank_desc = get_bank_desc(bank)?;
     let serialized = serde_yaml::to_string(&bank_desc).unwrap();
     println!("{}", serialized);
