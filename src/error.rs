@@ -32,7 +32,6 @@ use crate::mpkbank::MPK_BANK_DESCRIPTOR_LENGTH;
 #[derive(Debug, Error)]
 pub enum AppError {
     // Parsing
-
     #[error("Cannot parse note/octave string {0} (expected string with exactly one space)")]
     NoteOctaveParse(String),
     #[error("cannot parse note {0} (from {1})")]

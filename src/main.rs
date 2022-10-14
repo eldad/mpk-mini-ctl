@@ -33,6 +33,8 @@ mod mpkmidi;
 mod u14;
 mod operations;
 
+use log::debug;
+
 // fn cmd_dump_bank_yaml(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
 //     let bank = matches.value_of("bank").unwrap().parse::<u8>()?;
 //     dump_bank_yaml(bank)?;
@@ -47,13 +49,6 @@ mod operations;
 //     }
 // }
 
-// fn cmd_read_yaml(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
-//     let filename = matches.value_of("filename").unwrap().parse::<String>()?;
-//     let bank_desc: MpkBankDescriptor = serde_yaml::from_reader(File::open(&filename)?)?;
-//     println!("{}", bank_desc);
-//     debug!("{:?}", bank_desc.into_bytes());
-//     Ok(())
-// }
 
 // fn cmd_send_yaml(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
 //     let filename = matches.value_of("filename").unwrap().parse::<String>()?;
@@ -78,11 +73,7 @@ mod operations;
 //                 )
 //                 .subcommand(SubCommand::with_name("ram").about("Dump current active settings (RAM) as yaml")),
 //         )
-//         .subcommand(
-//             SubCommand::with_name("read")
-//                 .about("Read yaml bank descriptor from file and display it")
-//                 .arg(Arg::with_name("filename").index(1).required(true)),
-//         )
+
 //         .subcommand(
 //             SubCommand::with_name("send")
 //                 .about("Read yaml bank descriptor from file and send it to the device")
@@ -98,12 +89,15 @@ mod operations;
 //
 //     match matches.subcommand_name() {
 //         Some("dump") => cmd_dump_yaml(matches.subcommand_matches("dump").unwrap()),
-//         Some("read") => cmd_read_yaml(matches.subcommand_matches("read").unwrap()),
 //         Some("send") => cmd_send_yaml(matches.subcommand_matches("send").unwrap()),
 //     }
 // }
 
+use std::fs::File;
+
 use clap::{Parser, Subcommand};
+
+use crate::mpkbank::MpkBankDescriptor;
 
 /// AKAI MPK Mini mkII Control Tool
 #[derive(Parser, Debug)]
@@ -130,6 +124,16 @@ enum Command {
 
     /// Show current active settings (RAM)
     ShowRAM,
+
+    /// Read yaml bank descriptor from file and display it
+    ReadFile { filename: String },
+}
+
+fn read_yaml(filename: &str) -> anyhow::Result<()> {
+    let bank_desc: MpkBankDescriptor = serde_yaml::from_reader(File::open(&filename)?)?;
+    println!("{}", bank_desc);
+    debug!("{:?}", bank_desc.into_bytes());
+    Ok(())
 }
 
 fn main() -> anyhow::Result<()> {
@@ -152,6 +156,7 @@ fn main() -> anyhow::Result<()> {
         Command::ShowBank { bank } => operations::show_bank(bank),
         Command::ShowRAM => operations::show_bank(0),
         Command::Passthrough => operations::passthrough(),
+        Command::ReadFile { filename } => Ok(read_yaml(&filename)?),
     }?;
 
     Ok(())
