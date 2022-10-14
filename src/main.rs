@@ -126,18 +126,7 @@ mod operations;
 //                 .help("Prints debugging information"),
 //         )
 //         .get_matches();
-
-//     let log_level = match matches.is_present("debug") {
-//         false => simplelog::LevelFilter::Info,
-//         true => simplelog::LevelFilter::Debug,
-//     };
-//     simplelog::CombinedLogger::init(vec![simplelog::TermLogger::new(
-//         log_level,
-//         simplelog::Config::default(),
-//         simplelog::TerminalMode::Stderr,
-//         simplelog::ColorChoice::Auto,
-//     )])?;
-
+//
 //     match matches.subcommand_name() {
 //         Some("show") => cmd_show(matches.subcommand_matches("show").unwrap()),
 //         Some("dump") => cmd_dump_yaml(matches.subcommand_matches("dump").unwrap()),
@@ -171,6 +160,18 @@ enum Command {
 
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
+
+    let log_level = match args.debug {
+        false => simplelog::LevelFilter::Info,
+        true => simplelog::LevelFilter::Debug,
+    };
+
+    simplelog::CombinedLogger::init(vec![simplelog::TermLogger::new(
+        log_level,
+        simplelog::Config::default(),
+        simplelog::TerminalMode::Stderr,
+        simplelog::ColorChoice::Auto,
+    )])?;
 
     match args.command {
         Command::Snoop => operations::snoop(),
