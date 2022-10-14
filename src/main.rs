@@ -78,7 +78,6 @@ mod operations;
 //                 )
 //                 .subcommand(SubCommand::with_name("ram").about("Dump current active settings (RAM) as yaml")),
 //         )
-//         .subcommand(SubCommand::with_name("passthrough").about("Passthrough (while snooping) MIDI messages"))
 //         .subcommand(
 //             SubCommand::with_name("read")
 //                 .about("Read yaml bank descriptor from file and display it")
@@ -99,7 +98,6 @@ mod operations;
 //
 //     match matches.subcommand_name() {
 //         Some("dump") => cmd_dump_yaml(matches.subcommand_matches("dump").unwrap()),
-//         Some("passthrough") => passthrough(),
 //         Some("read") => cmd_read_yaml(matches.subcommand_matches("read").unwrap()),
 //         Some("send") => cmd_send_yaml(matches.subcommand_matches("send").unwrap()),
 //     }
@@ -123,6 +121,9 @@ struct Args {
 enum Command {
     /// Snoop MIDI messages
     Snoop,
+
+    /// Passthrough (while snooping) MIDI messages
+    Passthrough,
 
     /// Show bank settings
     ShowBank { bank: u8 },
@@ -150,6 +151,7 @@ fn main() -> anyhow::Result<()> {
         Command::Snoop => operations::snoop(),
         Command::ShowBank { bank } => operations::show_bank(bank),
         Command::ShowRAM => operations::show_bank(0),
+        Command::Passthrough => operations::passthrough(),
     }?;
 
     Ok(())
