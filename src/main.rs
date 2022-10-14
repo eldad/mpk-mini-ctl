@@ -30,25 +30,10 @@ mod util;
 
 mod mpkbank;
 mod mpkmidi;
-mod u14;
 mod operations;
+mod u14;
 
 use log::debug;
-
-// fn cmd_dump_bank_yaml(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
-//     let bank = matches.value_of("bank").unwrap().parse::<u8>()?;
-//     dump_bank_yaml(bank)?;
-//     Ok(())
-// }
-
-// fn cmd_dump_yaml(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
-//     match matches.subcommand_name() {
-//         Some("bank") => cmd_dump_bank_yaml(matches.subcommand_matches("bank").unwrap()),
-//         Some("ram") => dump_bank_yaml(0),
-//         _ => Err(Box::new(RuntimeError::new("please provide a valid command."))),
-//     }
-// }
-
 
 // fn cmd_send_yaml(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
 //     let filename = matches.value_of("filename").unwrap().parse::<String>()?;
@@ -63,16 +48,6 @@ use log::debug;
 //         .version(env!("CARGO_PKG_VERSION"))
 //         .author(env!("CARGO_PKG_AUTHORS"))
 //         .about(env!("CARGO_PKG_DESCRIPTION"))
-//         .subcommand(
-//             SubCommand::with_name("dump")
-//                 .about("Dump settings")
-//                 .subcommand(
-//                     SubCommand::with_name("bank")
-//                         .about("Dump bank settings as yaml")
-//                         .arg(Arg::with_name("bank").index(1).required(true)),
-//                 )
-//                 .subcommand(SubCommand::with_name("ram").about("Dump current active settings (RAM) as yaml")),
-//         )
 
 //         .subcommand(
 //             SubCommand::with_name("send")
@@ -88,7 +63,6 @@ use log::debug;
 
 //
 //     match matches.subcommand_name() {
-//         Some("dump") => cmd_dump_yaml(matches.subcommand_matches("dump").unwrap()),
 //         Some("send") => cmd_send_yaml(matches.subcommand_matches("send").unwrap()),
 //     }
 // }
@@ -103,12 +77,12 @@ use crate::mpkbank::MpkBankDescriptor;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-   /// Prints debugging information
-   #[arg(long)]
-   debug: bool,
+    /// Prints debugging information
+    #[arg(long)]
+    debug: bool,
 
-   #[command(subcommand)]
-   command: Command,
+    #[command(subcommand)]
+    command: Command,
 }
 
 #[derive(Subcommand, Debug)]
@@ -127,6 +101,12 @@ enum Command {
 
     /// Read yaml bank descriptor from file and display it
     ReadFile { filename: String },
+
+    /// Dump bank settings as yaml
+    DumpBankSettings { bank: u8 },
+
+    /// Dump current active settings (RAM) as yaml
+    DumpRAMSettings,
 }
 
 fn read_yaml(filename: &str) -> anyhow::Result<()> {
@@ -157,6 +137,8 @@ fn main() -> anyhow::Result<()> {
         Command::ShowRAM => operations::show_bank(0),
         Command::Passthrough => operations::passthrough(),
         Command::ReadFile { filename } => Ok(read_yaml(&filename)?),
+        Command::DumpBankSettings { bank } => operations::dump_bank_yaml(bank),
+        Command::DumpRAMSettings => operations::dump_bank_yaml(0),
     }?;
 
     Ok(())
