@@ -35,37 +35,11 @@ mod u14;
 
 use log::debug;
 
-// fn cmd_send_yaml(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
-//     let filename = matches.value_of("filename").unwrap().parse::<String>()?;
-//     let bank_desc: MpkBankDescriptor = serde_yaml::from_reader(File::open(&filename)?)?;
-//     let bank = matches.value_of("destination").unwrap().parse::<u8>()?;
-//     set_bank_from_desc(bank, bank_desc)?;
-//     Ok(())
-// }
-
 // fn app() -> Result<(), Box<dyn Error>> {
 //     let matches = App::new(env!("CARGO_PKG_NAME"))
 //         .version(env!("CARGO_PKG_VERSION"))
 //         .author(env!("CARGO_PKG_AUTHORS"))
 //         .about(env!("CARGO_PKG_DESCRIPTION"))
-
-//         .subcommand(
-//             SubCommand::with_name("send")
-//                 .about("Read yaml bank descriptor from file and send it to the device")
-//                 .arg(Arg::with_name("filename").index(1).required(true))
-//                 .arg(
-//                     Arg::with_name("destination")
-//                         .index(2)
-//                         .required(true)
-//                         .help("0 for RAM, 1-4 for banks"),
-//                 ),
-//         )
-
-//
-//     match matches.subcommand_name() {
-//         Some("send") => cmd_send_yaml(matches.subcommand_matches("send").unwrap()),
-//     }
-// }
 
 use std::fs::File;
 
@@ -107,12 +81,24 @@ enum Command {
 
     /// Dump current active settings (RAM) as yaml
     DumpRAMSettings,
+
+    /// Read yaml bank descriptor from file and apply it on a bank
+    LoadBank { filename: String, bank: u8 },
+
+    /// Read yaml bank descriptor from file and apply it to active settings (RAM)
+    LoadRAM { filename: String },
 }
 
 fn read_yaml(filename: &str) -> anyhow::Result<()> {
     let bank_desc: MpkBankDescriptor = serde_yaml::from_reader(File::open(&filename)?)?;
     println!("{}", bank_desc);
     debug!("{:?}", bank_desc.into_bytes());
+    Ok(())
+}
+
+fn load_yaml(filename: &str, bank: u8) -> anyhow::Result<()> {
+    let bank_desc: MpkBankDescriptor = serde_yaml::from_reader(File::open(&filename)?)?;
+    operations::set_bank_from_desc(bank, bank_desc)?;
     Ok(())
 }
 
@@ -139,6 +125,8 @@ fn main() -> anyhow::Result<()> {
         Command::ReadFile { filename } => Ok(read_yaml(&filename)?),
         Command::DumpBankSettings { bank } => operations::dump_bank_yaml(bank),
         Command::DumpRAMSettings => operations::dump_bank_yaml(0),
+        Command::LoadBank { filename, bank } => Ok(load_yaml(&filename, bank)?),
+        Command::LoadRAM { filename } => Ok(load_yaml(&filename, 0)?),
     }?;
 
     Ok(())
