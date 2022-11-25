@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 midir = "0.8.0"
-clap = { version = "4.0.18", features = ["derive", "cargo"] }
+clap = { version = "4.0.27", features = ["derive", "cargo"] }
 regex = "1.6.0"
 serde = "1.0.141"
 serde_derive = "1.0.141"
