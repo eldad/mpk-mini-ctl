@@ -2,6 +2,8 @@
 
 Rust command line tool for the mpk mini.
 
+[![Continuous integration](https://github.com/eldad/mpk-mini-ctl/actions/workflows/rust.yml/badge.svg)](https://github.com/eldad/mpk-mini-ctl/actions/workflows/rust.yml)
+
 ## Usage
 
 ```
