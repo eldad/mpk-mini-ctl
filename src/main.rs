@@ -87,14 +87,14 @@ enum Command {
 }
 
 fn read_yaml(filename: &str) -> anyhow::Result<()> {
-    let bank_desc: MpkBankDescriptor = serde_yaml::from_reader(File::open(&filename)?)?;
+    let bank_desc: MpkBankDescriptor = serde_yaml::from_reader(File::open(filename)?)?;
     println!("{}", bank_desc);
     debug!("{:?}", bank_desc.into_bytes());
     Ok(())
 }
 
 fn load_yaml(filename: &str, bank: u8) -> anyhow::Result<()> {
-    let bank_desc: MpkBankDescriptor = serde_yaml::from_reader(File::open(&filename)?)?;
+    let bank_desc: MpkBankDescriptor = serde_yaml::from_reader(File::open(filename)?)?;
     operations::set_bank_from_desc(bank, bank_desc)?;
     Ok(())
 }
