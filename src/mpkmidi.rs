@@ -91,10 +91,10 @@ pub enum MpkMidiMessage {
 impl MpkMidiMessage {
     fn parse_sysex(bytes: &[u8]) -> Result<Self, AppError> {
         if bytes.len() < 3 {
-            return Err(AppError::SysEx(format!("runt: {:?}", bytes)));
+            return Err(AppError::SysEx(format!("runt: {bytes:?}")));
         }
         if *bytes.last().unwrap() != MIDI_SYSEX_END {
-            return Err(AppError::SysEx(format!("malformed: {:?}", bytes)));
+            return Err(AppError::SysEx(format!("malformed: {bytes:?}")));
         }
         if bytes[1] != SYSEX_AKAI {
             return Err(AppError::SysEx(format!(
@@ -110,7 +110,7 @@ impl MpkMidiMessage {
                 MpkBankDescriptor::from(&payload[SYSEX_MPK_BANK.len() + 1..])?,
             ))
         } else {
-            Err(AppError::SysEx(format!("unknown AKAI sysex message {:?}", payload)))
+            Err(AppError::SysEx(format!("unknown AKAI sysex message {payload:?}")))
         }
     }
 

@@ -44,7 +44,7 @@ impl Serialize for Note {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&format!("{}", self))
+        serializer.serialize_str(&format!("{self}"))
     }
 }
 
@@ -131,7 +131,7 @@ impl Note {
             11 => "B",
             _ => unreachable!(),
         };
-        format!("{} {}", note, octave)
+        format!("{note} {octave}")
     }
 }
 
@@ -309,7 +309,7 @@ impl ArpeggiatorTimeDivision {
 
 impl fmt::Display for ArpeggiatorTimeDivision {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        let enumrepr = format!("{:?}", self);
+        let enumrepr = format!("{self:?}");
         write!(f, "1/{}", &enumrepr[1..])
     }
 }
@@ -366,7 +366,7 @@ impl Swing {
 
 impl fmt::Display for Swing {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        let enumrepr = format!("{:?}", self);
+        let enumrepr = format!("{self:?}");
         write!(f, "{}%", &enumrepr[1..])
     }
 }
@@ -457,7 +457,7 @@ impl fmt::Display for MpkBankDescriptor {
 impl fmt::Debug for MpkBankDescriptor {
     /* TODO: write raw bytes */
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self)
+        write!(f, "{self}")
     }
 }
 
