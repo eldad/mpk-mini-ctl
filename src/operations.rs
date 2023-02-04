@@ -39,7 +39,7 @@ pub fn snoop() -> Result<(), AppError> {
     let cb = |_, bytes: &[u8], _: &mut _| {
         debug!("rx bytes: {:?}", bytes);
         match MpkMidiMessage::parse_msg(bytes) {
-            Ok(m) => println!("{:?}", m),
+            Ok(m) => println!("{m:?}"),
             Err(e) => warn!("Unparsed: {}; bytes: {:?}", e, bytes),
         }
     };
@@ -56,7 +56,7 @@ pub fn passthrough() -> Result<(), AppError> {
     let cb = move |_, bytes: &[u8], _: &mut _| {
         debug!("rx bytes: {:?}", bytes);
         match MpkMidiMessage::parse_msg(bytes) {
-            Ok(m) => println!("{:?}", m),
+            Ok(m) => println!("{m:?}"),
             Err(e) => warn!("Unparsed: {}; bytes: {:?}", e, bytes),
         }
         if let Err(e) = tx.send(Vec::from(bytes)) {
@@ -132,13 +132,13 @@ pub fn set_bank_from_desc(bank: u8, bank_desc: MpkBankDescriptor) -> Result<(), 
 
 pub fn show_bank(bank: u8) -> Result<(), AppError> {
     let bank_desc = get_bank_desc(bank)?;
-    println!("Bank {}:\n{}", bank, bank_desc);
+    println!("Bank {bank}:\n{bank_desc}");
     Ok(())
 }
 
 pub fn dump_bank_yaml(bank: u8) -> Result<(), AppError> {
     let bank_desc = get_bank_desc(bank)?;
     let serialized = serde_yaml::to_string(&bank_desc).unwrap();
-    println!("{}", serialized);
+    println!("{serialized}");
     Ok(())
 }

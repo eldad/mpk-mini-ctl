@@ -88,7 +88,7 @@ enum Command {
 
 fn read_yaml(filename: &str) -> anyhow::Result<()> {
     let bank_desc: MpkBankDescriptor = serde_yaml::from_reader(File::open(filename)?)?;
-    println!("{}", bank_desc);
+    println!("{bank_desc}");
     debug!("{:?}", bank_desc.into_bytes());
     Ok(())
 }
