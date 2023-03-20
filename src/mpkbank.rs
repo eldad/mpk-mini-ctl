@@ -205,8 +205,9 @@ impl Knob {
 }
 
 // PadMode
-#[derive(Serialize, Deserialize, Copy, Clone, Debug)]
+#[derive(Default, Serialize, Deserialize, Copy, Clone, Debug)]
 enum PadMode {
+    #[default]
     Momentary = 0,
     Toggle = 1,
 }
@@ -218,12 +219,6 @@ impl PadMode {
             1 => Ok(PadMode::Toggle),
             _ => Err(AppError::PadmodeUnknown(value)),
         }
-    }
-}
-
-impl Default for PadMode {
-    fn default() -> Self {
-        PadMode::Momentary
     }
 }
 
