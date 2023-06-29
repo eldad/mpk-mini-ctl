@@ -11,7 +11,7 @@ clap = { version = "4.1.11", features = ["derive", "cargo"] }
 regex = "1.8.4"
 serde = "1.0.141"
 serde_derive = "1.0.141"
-serde_yaml = "0.9.21"
+serde_yaml = "0.9.22"
 log = "0.4.19"
 simplelog = "0.12.1"
 anyhow = "1.0.71"
