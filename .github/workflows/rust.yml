@@ -1,4 +1,4 @@
-on: [push, pull_request]
+on: push
 
 name: Continuous integration
 
@@ -9,33 +9,13 @@ jobs:
     steps:
       - name: alsa-dev
         run: sudo apt-get update && sudo apt-get install libasound2-dev
+
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+
       - run: rustup component add rustfmt clippy
-      - name: cargo fmt check
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
-      - name: cargo check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-      - name: cargo clippy version
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --version
-      - name: cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings
-      - name: cargo test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
+
+      - run: cargo fmt --all -- --check
+      - run: cargo check
+      - run: cargo clippy --version
+      - run: cargo clippy -- -D warnings
+      - run: cargo test
