@@ -1,6 +1,6 @@
 [package]
 name = "mpk-mini-ctl"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Eldad Zack <eldad@fogrefinery.com>"]
 description = "AKAI MPK Mini mkII Control Tool"
 edition = "2021"
