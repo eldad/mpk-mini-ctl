@@ -7,7 +7,7 @@ Rust command line tool for the mpk mini.
 ## Usage
 
 ```
-mpk-mini-ctl 0.1.0
+mpk-mini-ctl 0.1.1
 Eldad Zack <eldad@fogrefinery.com>
 AKAI MPK Mini mkII Control Tool
 
@@ -23,10 +23,11 @@ Commands:
   dump-ram-settings   Dump current active settings (RAM) as yaml
   load-bank           Read yaml bank descriptor from file and apply it on a bank
   load-ram            Read yaml bank descriptor from file and apply it to active settings (RAM)
+  autocompletion      Install local bash auto-completion
   help                Print this message or the help of the given subcommand(s)
 
 Options:
       --debug    Prints debugging information
-  -h, --help     Print help information
-  -V, --version  Print version information
+  -h, --help     Print help
+  -V, --version  Print version
 ```
