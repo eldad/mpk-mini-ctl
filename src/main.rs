@@ -118,14 +118,11 @@ fn autocompletion(shell: clap_complete::Shell, install: bool) -> anyhow::Result<
 
             let target = basedir.join("mpk-mini-ctl");
 
-            Box::new(
-            File::options()
-                .read(false)
-                .write(true)
-                .create_new(true)
-                .open(target)?)
-            },
-        _ => Err(anyhow::anyhow!("installing autocompletion for this shell is not implemented yet"))?,
+            Box::new(File::options().read(false).write(true).create_new(true).open(target)?)
+        }
+        _ => Err(anyhow::anyhow!(
+            "installing autocompletion for this shell is not implemented yet"
+        ))?,
     };
 
     clap_complete::generate(shell, &mut Args::command(), "mpk-mini-ctl", &mut output);
