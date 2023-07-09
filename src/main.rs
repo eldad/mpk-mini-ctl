@@ -84,6 +84,9 @@ enum Command {
 
     /// Read yaml bank descriptor from file and apply it to active settings (RAM)
     LoadRAM { filename: String },
+
+    /// Install local bash auto-completion
+    BashAutocompletionInstall,
 }
 
 fn read_yaml(filename: &str) -> anyhow::Result<()> {
@@ -97,6 +100,10 @@ fn load_yaml(filename: &str, bank: u8) -> anyhow::Result<()> {
     let bank_desc: MpkBankDescriptor = serde_yaml::from_reader(File::open(filename)?)?;
     operations::set_bank_from_desc(bank, bank_desc)?;
     Ok(())
+}
+
+fn install_bash_autocompletion() {
+    todo!()
 }
 
 fn main() -> anyhow::Result<()> {
@@ -115,16 +122,17 @@ fn main() -> anyhow::Result<()> {
     )])?;
 
     match args.command {
-        Command::Snoop => operations::snoop(),
-        Command::ShowBank { bank } => operations::show_bank(bank),
-        Command::ShowRAM => operations::show_bank(0),
-        Command::Passthrough => operations::passthrough(),
-        Command::ReadFile { filename } => Ok(read_yaml(&filename)?),
-        Command::DumpBankSettings { bank } => operations::dump_bank_yaml(bank),
-        Command::DumpRAMSettings => operations::dump_bank_yaml(0),
-        Command::LoadBank { filename, bank } => Ok(load_yaml(&filename, bank)?),
-        Command::LoadRAM { filename } => Ok(load_yaml(&filename, 0)?),
-    }?;
+        Command::Snoop => operations::snoop()?,
+        Command::ShowBank { bank } => operations::show_bank(bank)?,
+        Command::ShowRAM => operations::show_bank(0)?,
+        Command::Passthrough => operations::passthrough()?,
+        Command::ReadFile { filename } => read_yaml(&filename)?,
+        Command::DumpBankSettings { bank } => operations::dump_bank_yaml(bank)?,
+        Command::DumpRAMSettings => operations::dump_bank_yaml(0)?,
+        Command::LoadBank { filename, bank } => load_yaml(&filename, bank)?,
+        Command::LoadRAM { filename } => load_yaml(&filename, 0)?,
+        Command::BashAutocompletionInstall => install_bash_autocompletion(),
+    };
 
     Ok(())
 }
