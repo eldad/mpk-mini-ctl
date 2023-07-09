@@ -35,9 +35,9 @@ mod u14;
 
 use crate::mpkbank::MpkBankDescriptor;
 
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
 use log::debug;
-use std::fs::File;
+use std::{fs::File, io::Write};
 
 /// AKAI MPK Mini mkII Control Tool
 #[derive(Parser, Debug)]
@@ -84,6 +84,15 @@ enum Command {
 
     /// Read yaml bank descriptor from file and apply it to active settings (RAM)
     LoadRAM { filename: String },
+
+    /// Install local bash auto-completion
+    Autocompletion {
+        #[arg(value_enum)]
+        shell: clap_complete::Shell,
+
+        #[arg(long)]
+        install: bool,
+    },
 }
 
 fn read_yaml(filename: &str) -> anyhow::Result<()> {
@@ -96,6 +105,27 @@ fn read_yaml(filename: &str) -> anyhow::Result<()> {
 fn load_yaml(filename: &str, bank: u8) -> anyhow::Result<()> {
     let bank_desc: MpkBankDescriptor = serde_yaml::from_reader(File::open(filename)?)?;
     operations::set_bank_from_desc(bank, bank_desc)?;
+    Ok(())
+}
+
+fn autocompletion(shell: clap_complete::Shell, install: bool) -> anyhow::Result<()> {
+    let mut output: Box<dyn Write> = match (install, &shell) {
+        (false, _) => Box::new(std::io::stdout()),
+        (true, clap_complete::Shell::Bash) => {
+            let homedir = home::home_dir().ok_or_else(|| anyhow::anyhow!("cannot get homedir"))?;
+            let basedir = homedir.join(".local/share/bash-completion/completions");
+            std::fs::create_dir_all(&basedir)?;
+
+            let target = basedir.join("mpk-mini-ctl");
+
+            Box::new(File::options().read(false).write(true).create_new(true).open(target)?)
+        }
+        _ => Err(anyhow::anyhow!(
+            "installing autocompletion for this shell is not implemented yet"
+        ))?,
+    };
+
+    clap_complete::generate(shell, &mut Args::command(), "mpk-mini-ctl", &mut output);
     Ok(())
 }
 
@@ -115,16 +145,17 @@ fn main() -> anyhow::Result<()> {
     )])?;
 
     match args.command {
-        Command::Snoop => operations::snoop(),
-        Command::ShowBank { bank } => operations::show_bank(bank),
-        Command::ShowRAM => operations::show_bank(0),
-        Command::Passthrough => operations::passthrough(),
-        Command::ReadFile { filename } => Ok(read_yaml(&filename)?),
-        Command::DumpBankSettings { bank } => operations::dump_bank_yaml(bank),
-        Command::DumpRAMSettings => operations::dump_bank_yaml(0),
-        Command::LoadBank { filename, bank } => Ok(load_yaml(&filename, bank)?),
-        Command::LoadRAM { filename } => Ok(load_yaml(&filename, 0)?),
-    }?;
+        Command::Snoop => operations::snoop()?,
+        Command::ShowBank { bank } => operations::show_bank(bank)?,
+        Command::ShowRAM => operations::show_bank(0)?,
+        Command::Passthrough => operations::passthrough()?,
+        Command::ReadFile { filename } => read_yaml(&filename)?,
+        Command::DumpBankSettings { bank } => operations::dump_bank_yaml(bank)?,
+        Command::DumpRAMSettings => operations::dump_bank_yaml(0)?,
+        Command::LoadBank { filename, bank } => load_yaml(&filename, bank)?,
+        Command::LoadRAM { filename } => load_yaml(&filename, 0)?,
+        Command::Autocompletion { shell, install } => autocompletion(shell, install)?,
+    };
 
     Ok(())
 }
