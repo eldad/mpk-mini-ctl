@@ -35,9 +35,9 @@ mod u14;
 
 use crate::mpkbank::MpkBankDescriptor;
 
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
 use log::debug;
-use std::fs::File;
+use std::{fs::File, io::Write};
 
 /// AKAI MPK Mini mkII Control Tool
 #[derive(Parser, Debug)]
@@ -86,7 +86,13 @@ enum Command {
     LoadRAM { filename: String },
 
     /// Install local bash auto-completion
-    BashAutocompletionInstall,
+    Autocompletion {
+        #[arg(value_enum)]
+        shell: clap_complete::Shell,
+
+        #[arg(long)]
+        install: bool,
+    },
 }
 
 fn read_yaml(filename: &str) -> anyhow::Result<()> {
@@ -102,8 +108,28 @@ fn load_yaml(filename: &str, bank: u8) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn install_bash_autocompletion() {
-    todo!()
+fn autocompletion(shell: clap_complete::Shell, install: bool) -> anyhow::Result<()> {
+    let mut output: Box<dyn Write> = match (install, &shell) {
+        (false, _) => Box::new(std::io::stdout()),
+        (true, clap_complete::Shell::Bash) => {
+            let homedir = home::home_dir().ok_or_else(|| anyhow::anyhow!("cannot get homedir"))?;
+            let basedir = homedir.join(".local/share/bash-completion/completions");
+            std::fs::create_dir_all(&basedir)?;
+
+            let target = basedir.join("mpk-mini-ctl");
+
+            Box::new(
+            File::options()
+                .read(false)
+                .write(true)
+                .create_new(true)
+                .open(target)?)
+            },
+        _ => Err(anyhow::anyhow!("installing autocompletion for this shell is not implemented yet"))?,
+    };
+
+    clap_complete::generate(shell, &mut Args::command(), "mpk-mini-ctl", &mut output);
+    Ok(())
 }
 
 fn main() -> anyhow::Result<()> {
@@ -131,7 +157,7 @@ fn main() -> anyhow::Result<()> {
         Command::DumpRAMSettings => operations::dump_bank_yaml(0)?,
         Command::LoadBank { filename, bank } => load_yaml(&filename, bank)?,
         Command::LoadRAM { filename } => load_yaml(&filename, 0)?,
-        Command::BashAutocompletionInstall => install_bash_autocompletion(),
+        Command::Autocompletion { shell, install } => autocompletion(shell, install)?,
     };
 
     Ok(())
