@@ -71,6 +71,7 @@ macro_rules! u14le_to_u16 {
 }
 
 #[derive(Debug)]
+#[allow(unused)]
 pub enum MpkMidiMessage {
     // channel, note, velocity
     NoteOff(u8, u8, u8),
