@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 midir = "0.9.1"
 clap = { version = "4.3.21", features = ["derive", "cargo"] }
-regex = "1.9.5"
+regex = "1.11.0"
 serde = "1.0.141"
 serde_derive = "1.0.141"
 serde_yaml = "0.9.25"
