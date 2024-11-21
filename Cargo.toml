@@ -6,7 +6,7 @@ description = "AKAI MPK Mini mkII Control Tool"
 edition = "2021"
 
 [dependencies]
-midir = "0.9.1"
+midir = "0.10.1"
 clap = { version = "4.3.21", features = ["derive", "cargo"] }
 regex = "1.9.5"
 serde = "1.0.141"
