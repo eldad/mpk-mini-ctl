@@ -49,7 +49,7 @@ impl Serialize for Note {
 }
 
 struct NoteVisitor;
-impl<'de> Visitor<'de> for NoteVisitor {
+impl Visitor<'_> for NoteVisitor {
     type Value = Note;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
