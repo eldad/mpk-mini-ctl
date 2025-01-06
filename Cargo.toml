@@ -6,15 +6,15 @@ description = "AKAI MPK Mini mkII Control Tool"
 edition = "2021"
 
 [dependencies]
-midir = "0.9.1"
-clap = { version = "4.3.21", features = ["derive", "cargo"] }
-regex = "1.9.5"
-serde = "1.0.141"
-serde_derive = "1.0.141"
-serde_yaml = "0.9.25"
-log = "0.4.20"
-simplelog = "0.12.1"
-anyhow = "1.0.75"
-thiserror = "1.0.48"
-clap_complete = "4.4.4"
-home = "0.5.5"
+midir = "0.10.1"
+clap = { version = "4", features = ["derive", "cargo"] }
+regex = "1"
+serde = "1.0.217"
+serde_derive = "1.0.217"
+serde_yaml = { version = "0.10.0", package = "serde_yaml_ng" }
+log = "0.4"
+simplelog = "0.12"
+anyhow = "1"
+thiserror = "1"
+clap_complete = "4"
+home = "0.5.11"
