@@ -54,10 +54,7 @@ pub enum AppError {
     BankKnobsUnexpectedLength(usize),
     #[error("trying to parse pads with unexpected length {0} (expected 64)")]
     BankPadsUnexpectedLength(usize),
-    #[error(
-        "Unexpected length for bank descriptor ({0}, expected {})",
-        MPK_BANK_DESCRIPTOR_LENGTH
-    )]
+    #[error("Unexpected length for bank descriptor ({0}, expected {MPK_BANK_DESCRIPTOR_LENGTH})")]
     BankDescriptionUnexpectedLength(usize),
 
     // MIDI
